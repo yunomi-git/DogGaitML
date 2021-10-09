@@ -7,7 +7,7 @@ Created on Fri Oct  8 21:12:00 2021
 
 from abc import ABC, abstractmethod
 import numpy as np
-from Polygon import Polygon2D
+from Polygon import Triangle2D
 
 class FootModel(ABC):
     def __init__(self):
@@ -30,6 +30,9 @@ class SimpleFootModel(FootModel):
         self.expandedStateDims = 31;
         self.outputDims = 6;
         self.defaultFeetPositions = np.array([[1,1],[1,2],[2,3],[1,4]]) #TODO
+        self.oppositeFootMap = {0:2, 1:3, 2:0, 3:1}
+        self.horizontalFootMap = {0:3, 1:2, 2:1, 3:0}
+        self.verticalFootMap = {0:1, 1:0, 2:3, 3:2}
     
     def getDesiredMotionFromState(self, state, desiredMotion, parameters):
         feetThatCanMove = self.getFeetThatCanMove(state);
@@ -49,13 +52,19 @@ class SimpleFootModel(FootModel):
         desiredMotion = bestOutput;
         desiredMotion[0] = bestFoot;
         return bestOutput;
+    
+    def getOtherFeetOrderedIndices(self, i):
+        orderedIndices = [self.oppositeFootMap[i],
+                          self.horizontalFootMap[i],
+                          self.verticalFootMap[i]]
+        return orderedIndices
             
     def getFeetThatCanMove(self, state):
         feetThatCanMove = []
         
         for i in range(4):
-            supportTrianglePoly = Polygon2D(self.getEveryFootExcept(state, i));
-            if supportTrianglePoly.isPointEnclosed(state[i,:]):
+            supportTriangle = Triangle2D(self.getEveryFootExcept(state, i));
+            if supportTriangle.isPointEnclosed(np.array([0,0])):
                 feetThatCanMove.append(i)
                 if len(feetThatCanMove) == 2:
                     break
@@ -64,7 +73,7 @@ class SimpleFootModel(FootModel):
     
     def getEveryFootExcept(self, state, foot):
         feet = np.copy(state);
-        feet = feet[np.arange(4) != foot]        
+        feet = feet[self.getOtherFeetOrderedIndices(foot)]        
         return feet
     
     #TODO
@@ -123,10 +132,55 @@ class SimpleFootModel(FootModel):
     def getNumParameters(self):
         return (self.expandedStateDims * self.outputDims)
     
-
     
+    
+    
+    
+    
+    
+def testFeetThatCanMove():
+    footModel = SimpleFootModel()
+    state = np.array([[1.0,1.0],[1.0,-1.0],[-1.0,-1.0],[-1.0,1.0]])
+    COMPositions = np.array([[0., 0.5], [0.5,0],[0,-0.5],[-0.5,0]])
+    correctAnswers = [[1,2],[2,3],[0,3],[0,1]]
+    for i in range(4):
+        COMPosition = COMPositions[i,:]
+        tempState = state - COMPosition;
+        movableFeet = footModel.getFeetThatCanMove(tempState)
+        if (not (sorted(movableFeet) == sorted(correctAnswers[i][:]))):
+            print("\n----")
+            print(i)
+            print("error in testFeetThatCanMove\n----")
+        else:
+            print(".")
+    
+def testGetFeetExcept():
+    state = np.array([[0,0],[1,1],[2,2],[3,3]])
+    footModel = SimpleFootModel()
+    for i in range(4):
+        allFeetExcepti = footModel.getEveryFootExcept(state, i)
+        if (any((allFeetExcepti[:]==state[i,:]).all(1)) != False):
+            print("\n----")
+            print(i)
+            print("error in getFeetExcept\n----")
+        else:
+            print(".")
+            
+def testGetOrderedIndices():
+    footModel = SimpleFootModel()
+    accurateList = [[2,3,1],[3, 2, 0], [0,1,3],[1,0,2]]
+    for i in range(4):
+        if (footModel.getOtherFeetOrderedIndices(i) != accurateList[i][:]):
+            print("\n----")
+            print(i)
+            print("error in getOrderedIndices\n----")
+        else:
+            print(".")
+        
 def main():
-    pass
+    # testGetFeetExcept()
+    # testGetOrderedIndices()
+    testFeetThatCanMove()
     
     
 if __name__ == "__main__":
