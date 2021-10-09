@@ -14,7 +14,7 @@ class FootModel(ABC):
         pass
     
     @abstractmethod
-    def getDesiredMotionFromState(self, state, desiredMotion, parameters):
+    def computeMotionFromState(self, state, desiredMotion, parameters):
         pass
     
     @abstractmethod
@@ -29,12 +29,17 @@ class SimpleFootModel(FootModel):
     def __init__(self):
         self.expandedStateDims = 31;
         self.outputDims = 6;
-        self.defaultFeetPositions = np.array([[1,1],[1,2],[2,3],[1,4]]) #TODO
+        self.halfLength = 112.5;
+        self.halfWidth = 60.0 + 13.97;
+        self.defaultFeetPositions = np.array([[ self.halfLength,-self.halfWidth],
+                                              [-self.halfLength,-self.halfWidth],
+                                              [-self.halfLength, self.halfWidth],
+                                              [ self.halfLength, self.halfWidth]]);
         self.oppositeFootMap = {0:2, 1:3, 2:0, 3:1}
         self.horizontalFootMap = {0:3, 1:2, 2:1, 3:0}
         self.verticalFootMap = {0:1, 1:0, 2:3, 3:2}
     
-    def getDesiredMotionFromState(self, state, desiredMotion, parameters):
+    def computeMotionFromState(self, state, desiredMotion, parameters):
         feetThatCanMove = self.getFeetThatCanMove(state);
         parameterModel = self.convertParametersToModel(parameters);
         
@@ -78,19 +83,21 @@ class SimpleFootModel(FootModel):
     
     #TODO
     def getExpandedState(self, state, desiredMotion, footToMove):
+        orderedFootIndices = [footToMove] + self.getOtherFeetOrderedIndices(footToMove)
+        desiredState = self.getDesiredState(state, desiredMotion)
         expandedState = np.array([1,  # 1
-                                  1,  #foot i orig x
-                                  2,  #foot i orig y
-                                  3,  #foot op orig x
-                                  4,  #foot op orig y
-                                  5,  #foot hz orig x
-                                  6,  #foot hz orig y
-                                  7,  #foot vt orig x
-                                  8,  #foot vt orig y
-                                  9,  #foot i ideal x
-                                  10, #foot i ideal y
-                                  11, #desired COM x
-                                  12, #desired COM y
+                                  state[orderedFootIndices[0],0],  #foot i orig x
+                                  state[orderedFootIndices[0],1],  #foot i orig y
+                                  state[orderedFootIndices[1],0],  #foot op orig x
+                                  state[orderedFootIndices[1],1],  #foot op orig y
+                                  state[orderedFootIndices[2],0],  #foot hz orig x
+                                  state[orderedFootIndices[2],1],  #foot hz orig y
+                                  state[orderedFootIndices[3],0],  #foot vt orig x
+                                  state[orderedFootIndices[3],1],  #foot vt orig y
+                                  desiredState[orderedFootIndices[0],0],  #foot i ideal x
+                                  desiredState[orderedFootIndices[0],1], #foot i ideal y
+                                  desiredMotion.translationX, #desired COM x
+                                  desiredMotion.translationY, #desired COM y
                                   13, #orig feet op dot hz
                                   14, #orig feet op dot vt
                                   15, #orig feet hz dot vt
@@ -112,6 +119,12 @@ class SimpleFootModel(FootModel):
                                   ])
         return expandedState
     
+    def getDesiredState(self, origState, desiredMotion):
+        translation = np.array([desiredMotion.translationX, desiredMotion.translationY])
+        rotation = getRotationMatrix(desiredMotion.rotation)
+        desiredState = np.matmul(getRotationMatrix(rotation), translation.T).T
+        return desiredState
+    
     def convertParametersToModel(self, parameters):
         model = parameters.reshape([self.outputDims, self.expandedStateDims])
         return model
@@ -132,9 +145,18 @@ class SimpleFootModel(FootModel):
     def getNumParameters(self):
         return (self.expandedStateDims * self.outputDims)
     
+@dataclass
+class OptimizationParameters:
+    translationX : float
+    translationY : float
+    rotation : float
     
-    
-    
+def getRotationMatrix(angle):
+    rad = np.radians(angle)
+    c = np.cos(rad)
+    s = np.sin(rad)
+    rot = np.array([[c, -s],[s,c]])
+    return rot
     
     
     
