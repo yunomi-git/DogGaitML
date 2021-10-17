@@ -18,3 +18,10 @@ def getSignedVectorAngleFromRotation(v, rotation):
     v_rotated = rotationMat @ v
     angle = np.degrees(np.arctan2(v_rotated[1], v_rotated[0]))
     return angle
+
+def getUnitVectorFromAngle(angle):
+    rad = np.radians(angle)
+    c = np.cos(rad)
+    s = np.sin(rad)
+    vector = np.array([c, s])
+    return vector

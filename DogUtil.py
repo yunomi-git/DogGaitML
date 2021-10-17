@@ -11,10 +11,10 @@ from Polygon import Triangle2D
 import MathUtil as mu
 
 @dataclass
-class DesiredMotion:
+class TaskMotion:
     translationX : float
     translationY : float
-    rotation : float
+    relativeRotation : float
     
 class State:
     def __init__(self, footState, absoluteRotation):
@@ -28,18 +28,19 @@ class Command:
         self.comTranslation = comTranslation
         self.comRelativeRotation = comRelativeRotation
         
-    def getDesiredMotion(self):
-        desiredMotion = DesiredMotion(translationX=self.comTranslation[0], 
+    def getTaskMotion(self):
+        taskMotion = TaskMotion(translationX=self.comTranslation[0], 
                                       translationY=self.comTranslation[1], 
-                                      rotation=self.comRelativeRotation)
-        return desiredMotion
+                                      relativeRotation=self.comRelativeRotation)
+        return taskMotion
     
 
 
 class DogModel():
     # in groups of 4,feet always listed in order UR, BR, BL, UL
     # in groups of 3, feet listed as Opposing, Horiz, Vert
-    maximumFootDistanceFromIdeal = 100
+    maximumFootDistanceFromIdeal = 100.0
+    maximumCOMTranslationDistance = maximumFootDistanceFromIdeal/4.0
     ordered3FootMaps = {0:[2,3,1], 1:[3,2,0], 2:[0,1,3], 3:[1,0,2]}
     
     def __init__(self, state=None):
@@ -52,7 +53,7 @@ class DogModel():
         if (state is not None):
             self.setState(state)
         else:
-            self.setState(State(self.defaultFootState, 0))
+            self.setState(State(self.defaultFootState, 0.0))
         
        
         
@@ -60,19 +61,31 @@ class DogModel():
         self.footState = state.footState
         self.absoluteRotation = state.absoluteRotation
         
-    def getIdealFootState(self, desiredMotion):
-        translation = np.array([desiredMotion.translationX, desiredMotion.translationY])
-        fullRotation = self.absoluteRotation + desiredMotion.rotation
+    def getIdealFootStateFromOriginalCom(self, taskMotion):
+        translation = np.array([taskMotion.translationX, taskMotion.translationY])
+        fullRotation = self.absoluteRotation + taskMotion.relativeRotation
         fullRotationMat = mu.getRotationMatrix(fullRotation)
         desiredFootState = np.matmul(fullRotationMat, (self.defaultFootState).T).T+translation
         return desiredFootState
+    
+    def getPostMotionFootDistancesFromIdeal(self, postMotionFootState, taskMotion):
+        idealFootState = self.getIdealFootStateFromOriginalCom(taskMotion)
+        postMotionFootStateFromOriginalCOM = postMotionFootState + np.array([taskMotion.translationX, 
+                                                                             taskMotion.translationY])
+        distances = np.linalg.norm(postMotionFootStateFromOriginalCOM - idealFootState, axis=1)
+        return distances
+    
+    def getPreMotionFootDistancesFromIdeal(self, taskMotion):
+        idealFootState = self.getIdealFootStateFromOriginalCom(taskMotion)
+        distances = np.linalg.norm(self.footState - idealFootState, axis=1)
+        return distances
     
     def getFeetThatCanMove(self):
         feetThatCanMove = []
         
         for i in range(4):
             supportTriangle = Triangle2D(self.getEveryFootExcept(i));
-            if supportTriangle.isPointEnclosed(np.array([0,0])):
+            if supportTriangle.isPointEnclosed(np.array([0.,0.])):
                 feetThatCanMove.append(i)
                 if len(feetThatCanMove) == 2:
                     break

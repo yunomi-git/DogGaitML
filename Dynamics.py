@@ -5,7 +5,7 @@ Created on Sat Oct  9 18:51:00 2021
 @author: Evan Yu
 """
 import numpy as np
-from DogUtil import Command, State, DesiredMotion, DogModel
+from DogUtil import Command, State, TaskMotion, DogModel
 from Polygon import Triangle2D
 
 class Dynamics():
@@ -16,19 +16,20 @@ class Dynamics():
         self.failureMessage = DynamicsFailureMessage()
     
     def applyCommand(self, command):
-        if (self.hasNotFailed()):
+        if (not self.hasFailed()):
             self.dogModel.setState(self.state)
             footToMove = command.footToMove
-            nextFootState = np.copy(self.state)
-            nextFootState[footToMove, :] = command.footPosition
+            nextFootState = np.copy(self.state.footState)
+            nextFootState[footToMove, :] += command.footTranslation
+            nextFootState -= command.comTranslation
             
-            nextAbsoluteRotation = self.currentRelativeRotation + command.comRelativeRotation
+            nextAbsoluteRotation = self.state.absoluteRotation + command.comRelativeRotation
             
             nextState = State(nextFootState, nextAbsoluteRotation)
             
             self.checkFailureAfterMotion(nextState, command)
-            if (self.hasNotFailed()):
-                self.state = nextState
+            # if (not self.hasFailed()):
+            self.state = nextState #saves the broken state
                             
     
     def checkFailureAfterMotion(self, nextState, command):
@@ -36,10 +37,8 @@ class Dynamics():
         footToMove = command.footToMove
         
         # each foot needs to be within x distance from default (at ideal)
-        idealFootState = self.dogModel.getIdealFootState(command.getDesireMotion())
-        nextFootState = np.copy(nextState.footState);
-        nextFootState[footToMove, :] += command.footTranslation
-        footDistanceFromIdealFoots = np.linalg.norm(nextFootState - idealFootState, axis=1)
+        footDistanceFromIdealFoots = self.dogModel.getPostMotionFootDistancesFromIdeal(nextState.footState, 
+                                                                                       command.getTaskMotion())
         distanceViolations = footDistanceFromIdealFoots > DogModel.maximumFootDistanceFromIdeal
         
         if (distanceViolations[footToMove]):
@@ -53,16 +52,18 @@ class Dynamics():
         # com must be within poylygon at beginning of motion
         # com must be within polygon at end of motion
         finalComTranslation = command.comTranslation
-        supportPolygon = Triangle2D(self.dogModel.getEveryFootExceptUnordered(footToMove))
-        beginningIsEnclosed = supportPolygon.isEnclosed(np.array([0,0]))
-        endIsEnclosed = supportPolygon.isEnclosed(finalComTranslation)
+        supportPolygon = Triangle2D(self.dogModel.getEveryFootExcept(footToMove))
+        beginningIsEnclosed = supportPolygon.isPointEnclosed(np.array([0,0]))
+        endIsEnclosed = supportPolygon.isPointEnclosed(finalComTranslation)
         if not beginningIsEnclosed:
             failureMessage.setCOMIsNotContainedAtStartFailure()
         if not endIsEnclosed:
             failureMessage.setCOMIsNotContainedAtEndFailure()
+            
+        self.failureMessage = failureMessage
     
     def hasFailed(self):
-        return self.dynamicsFailureMessage.failureHasOccurred()
+        return self.failureMessage.failureHasOccurred()
     
     def getFailureMessage(self):
         return self.failureMessage
@@ -80,10 +81,10 @@ class DynamicsFailureMessage:
         self.comIsNotContainedAtEnd = False
         
     def setSwingFootPlacementOutOfBoundsFailure(self):
-        self.swingFootPlacementOutofBounds = True
+        self.swingFootPlacementOutOfBounds = True
         
     def setAnchoredFootPlacementsOutOfBoundsFailure(self, num):
-        self.swingFootPlacementOutofBounds = True
+        self.anchoredFootPlacementsOutOfBounds = True
         self.numAnchoredFootPlacementsOutOfBounds = num
         
     def setCOMIsNotContainedAtStartFailure(self):
@@ -97,4 +98,16 @@ class DynamicsFailureMessage:
                 self.anchoredFootPlacementsOutOfBounds or
                 self.comIsNotContainedAtEnd or
                 self.comIsNotContainedAtStart)
-              
+    
+    def __str__(self):
+        output = ""
+        if (self.swingFootPlacementOutOfBounds):
+            output += "Swing foot placement out of bounds\n"
+        if (self.anchoredFootPlacementsOutOfBounds):
+            output += "Anchored foot placement out of bounds, "
+            output += str(self.numAnchoredFootPlacementsOutOfBounds) + "\n"
+        if (self.comIsNotContainedAtStart):
+            output += "COM Not Contained At Start\n"
+        if (self.comIsNotContainedAtEnd):
+            output += "COM Not Contained At End\n"
+        return output

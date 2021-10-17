@@ -30,35 +30,40 @@ class Optimizer(ABC):
         self.optimizationStepSizeScaling = optimizationParameters.optimizationStepSizeScaling;
         self.scaleEveryNSteps = optimizationParameters.scaleEveryNSteps
         self.stepCount = 0;
-        self.history = [];
-        self.history.append([initialValue, costEvaluator.getCost(initialValue)]);
+        self.valueHistory = np.array([initialValue])
+        self.costHistory = np.array([costEvaluator.getCost(initialValue)])
+        # self.history = [];
+        # self.history.append([initialValue, costEvaluator.getCost(initialValue)]);
     
     def takeOptimizationStep(self):
         valueGradientDirection = self.findValueGradient()
         valueStepVector = self.optimizationStepSize * valueGradientDirection;
         self.value = self.value + valueStepVector
-        self.history.append([self.value, self.costEvaluator.getCost(self.value)]);
+        # self.history.append([self.value, self.costEvaluator.getCost(self.value)]);
+        self.valueHistory = np.append(self.valueHistory, [self.value], axis=0)
+        self.costHistory = np.append(self.costHistory, self.costEvaluator.getCost(self.value))
         self.stepCount += 1;
         if (self.stepCount % self.scaleEveryNSteps == 0):
             self.optimizationStepSize *= self.optimizationStepSizeScaling
+        print(self.stepCount)
         
     def getCurrentStateAndCost(self):
         return self.history[-1]
     
     def getFullHistory(self):
-        return self.history;
+        return (self.valueHistory, self.costHistory)
         
     @abstractmethod
     def findValueGradient(self):
         pass;
         
     def hasReachedMinimum(self):
-        if len(self.history) < 2:
+        if len(self.costHistory) < 2:
             return False;
-        currentHistory = self.history[-1];
-        lastHistory = self.history[-2];
-        currentCost = currentHistory[1];
-        lastCost = lastHistory[1];
+        # currentHistory = self.history[-1];
+        # lastHistory = self.history[-2];
+        currentCost = self.costHistory[-1];
+        lastCost = self.costHistory[-2];
         return abs(lastCost - currentCost) < self.convergenceThreshold;
     
     def optimizeUntilMaxCount(self, maxCount):
@@ -67,15 +72,15 @@ class Optimizer(ABC):
             self.takeOptimizationStep();
             currentCount += 1;
 
-class EvolutionaryOptimizer(Optimizer):
+class GradientDescentOptimizer(Optimizer):
     def __init__(self, initialValue, costEvaluator, optimizationParameters):
         super().__init__(initialValue, costEvaluator, optimizationParameters);
         
     def findValueGradient(self):
         numDim = self.value.size;
         valueGradient = np.zeros(numDim);
-        currentHistory = self.history[-1]
-        currentCost = currentHistory[1];
+        # currentHistory = self.history[-1]
+        currentCost = self.costHistory[-1];
         #construct gradient by sampling in every direction
         for i in range(numDim):
             valueTemp = np.copy(self.value);
@@ -104,7 +109,7 @@ def optimizeParabola() :
     optimizationParameters = OptimizationParameters(0.5, 0.5, 0.00, 0.9, 3);
     initialValue = np.array([5.0]);
     costEvaluator = ParabolicCostEvaluator(1.0, 0);
-    optimizer = EvolutionaryOptimizer(initialValue, costEvaluator, optimizationParameters);
+    optimizer = GradientDescentOptimizer(initialValue, costEvaluator, optimizationParameters);
     optimizer.optimizeUntilMaxCount(100);
     history = optimizer.getFullHistory();
     
@@ -125,25 +130,20 @@ def optimizeParabaloid():
     optimizationParameters = OptimizationParameters(0.1, 0.001, 0.00, 0.95, 10);
     initialValue = np.array([5.0, 5.0]);
     costEvaluator = ParaboloidCostEvaluator(a, b);
-    optimizer = EvolutionaryOptimizer(initialValue, costEvaluator, optimizationParameters);
+    optimizer = GradientDescentOptimizer(initialValue, costEvaluator, optimizationParameters);
     optimizer.optimizeUntilMaxCount(1000);
-    history = optimizer.getFullHistory();
+    valueHistory, costHistory = optimizer.getFullHistory();
     
-    count = len(history);
-    xval = [];
-    yval = [];
-    zval = [];
-    for i in range(count):
-        x = history[i][0];
-        xval.append(x[0])
-        yval.append(x[1])
-        zval.append(history[i][1])
+    count = len(costHistory);
+    xval = valueHistory[:,0];
+    yval = valueHistory[:,1];
+    zval = costHistory;
     
     fig = mpl.figure()
     ax = fig.add_subplot(111, projection='3d')
     plotParaboloic(ax, a, b)
     ax.plot(xval, yval, zval);
-    # print(zval) 
+    print(zval[-1]) 
     print(xval[-1])
     print(yval[-1])
     

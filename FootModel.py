@@ -8,16 +8,20 @@ Created on Fri Oct  8 21:12:00 2021
 from abc import ABC, abstractmethod
 import numpy as np
 from Polygon import Triangle2D
-from DogUtil import Command, State, DesiredMotion, DogModel
+from DogUtil import Command, State, TaskMotion, DogModel
 import MathUtil as mu
 
 
 class FootModel(ABC):
-    def __init__(self):
+    def __init__(self, parameters=None):
         pass
     
     @abstractmethod
-    def computeCommandFromState(self, state, desiredMotion, parameters):
+    def computeCommandFromState(self, state, desiredMotion):
+        pass
+    
+    @abstractmethod
+    def setParameters(self, parameters):
         pass
     
     @abstractmethod
@@ -26,20 +30,24 @@ class FootModel(ABC):
     
     
 class SimpleFootModel(FootModel):
-    def __init__(self, parameters):
+    def __init__(self, parameters=None):
         self.expandedStateDims = 31;
         self.outputDims = 6;
-        self.parameterModel = self.convertParametersToModel(parameters)
+        if (parameters is not None):
+            self.parameterModel = self.convertParametersToModel(parameters)
         self.dogModel = DogModel()
+        
+    def setParameters(self, parameters):
+        self.parameterModel = self.convertParametersToModel(parameters)
     
-    def computeCommandFromState(self, state, desiredMotion):
+    def computeCommandFromState(self, state, desiredTaskMotion):
         footState = state.footState
         self.dogModel.setState(state)
-        feetThatCanMove = self.dogModel.getFeetThatCanMove(footState);
+        feetThatCanMove = self.dogModel.getFeetThatCanMove();
         
         outputList = [];
         for foot in feetThatCanMove:
-            expandedState = self.getExpandedState(state, desiredMotion, foot);
+            expandedState = self.getExpandedState(state, desiredTaskMotion, foot);
             output = np.matmul(self.parameterModel, expandedState);
             outputList.append(output)
 
@@ -54,15 +62,15 @@ class SimpleFootModel(FootModel):
                                  bestOutput[5])
         return desiredCommand;
     
-    def getExpandedState(self, state, desiredMotion, footToMove):
+    def getExpandedState(self, state, desiredTaskMotion, footToMove):
         footState = state.footState;
         self.dogModel.setState(state) # state is technically already set. Should I do it again here?
         ofi = [footToMove] + self.dogModel.getOtherFeetOrderedIndices(footToMove)
-        idealFootState = self.dogModel.getIdealFootState(desiredMotion)
-        footStateInIdealCOM = footState - np.array([desiredMotion.translationX, desiredMotion.translationY])
+        idealFootState = self.dogModel.getIdealFootStateFromOriginalCom(desiredTaskMotion)
+        footStateInIdealCOM = footState - np.array([desiredTaskMotion.translationX, desiredTaskMotion.translationY])
         origFootDistanceFromOrigCOMs = np.linalg.norm(footState, axis=1)
-        origFootDistanceFromIdealFoots = np.linalg.norm(footState - idealFootState, axis=1)
-        desiredRotationFromDefault = state.absoluteRotation + desiredMotion.rotation
+        origFootDistanceFromIdealFoots = self.dogModel.getPreMotionFootDistancesFromIdeal(desiredTaskMotion)
+        desiredRotationFromDefault = state.absoluteRotation + desiredTaskMotion.relativeRotation
         expandedState = np.array([
             1,  # 1
             footState[ofi[0],0],  #foot i orig x
@@ -75,8 +83,8 @@ class SimpleFootModel(FootModel):
             footState[ofi[3],1],  #foot vt orig y
             idealFootState[ofi[0],0],  #foot i ideal x
             idealFootState[ofi[0],1], #foot i ideal y
-            desiredMotion.translationX, #desired COM x
-            desiredMotion.translationY, #desired COM y
+            desiredTaskMotion.translationX, #desired COM x
+            desiredTaskMotion.translationY, #desired COM y
             np.dot(footState[ofi[1],:], footState[ofi[2],:]), #orig com,feet op dot hz
             np.dot(footState[ofi[1],:], footState[ofi[3],:]), #orig com,feet op dot vt
             np.dot(footState[ofi[2],:], footState[ofi[3],:]), #orig com,feet hz dot vt
@@ -91,7 +99,7 @@ class SimpleFootModel(FootModel):
             origFootDistanceFromIdealFoots[ofi[1]], #orig foot vs ideal foot op
             origFootDistanceFromIdealFoots[ofi[2]], #orig foot vs ideal foot hz
             origFootDistanceFromIdealFoots[ofi[3]], #orig foot vs ideal foot vt
-            desiredMotion.rotation, #desired angle
+            desiredTaskMotion.relativeRotation, #desired angle
             mu.getSignedVectorAngleFromRotation(footStateInIdealCOM[ofi[1],:], desiredRotationFromDefault), #orig foot-desired com angle from desired angle op
             mu.getSignedVectorAngleFromRotation(footStateInIdealCOM[ofi[2],:], desiredRotationFromDefault), #orig foot-desired com angle from desired angle hz
             mu.getSignedVectorAngleFromRotation(footStateInIdealCOM[ofi[3],:], desiredRotationFromDefault) #orig foot-desired com angle from desired angle vt

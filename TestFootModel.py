@@ -6,7 +6,7 @@ Created on Mon Oct 11 11:15:02 2021
 """
 
 import numpy as np
-from DogUtil import Command, State, DesiredMotion
+from DogUtil import Command, State, TaskMotion
 import FootModel as fmodel
 import time
 
@@ -19,8 +19,8 @@ def testGetExpandedStates():
     rotation = 5
     originalState = State(defaultFootState, rotation)
     footToMove = 0
-    desiredMotion = DesiredMotion(10, 20, 25)
-    expandedState = footModel.getExpandedState(originalState, desiredMotion, footToMove)
+    desiredTaskMotion = TaskMotion(10, 20, 25)
+    expandedState = footModel.getExpandedState(originalState, desiredTaskMotion, footToMove)
     correctExpandedState = np.array([
             1,  # 1
             112.5,  #foot i orig x
