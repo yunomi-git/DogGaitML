@@ -64,17 +64,26 @@ class Simulation(CostEvaluator):
             desiredCommand = self.footModel.computeCommandFromState(self.currentState, self.desiredTaskMotion);
             dynamics.applyCommand(desiredCommand)
             originalState = self.currentState
-
+            
+            currentState = dynamics.getCurrentState()
+            currentCOMInWorldFrame = self.currentCOMInWorldFrame + desiredCommand.comTranslation
+            
             if not dynamics.hasFailed():
-                self.currentState = dynamics.getCurrentState()
-                self.currentCOMInWorldFrame = self.currentCOMInWorldFrame + desiredCommand.comTranslation
+                # self.currentState = dynamics.getCurrentState()
+                # self.currentCOMInWorldFrame = self.currentCOMInWorldFrame + desiredCommand.comTranslation
+                self.currentState = currentState
+                self.currentCOMInWorldFrame = currentCOMInWorldFrame
             else:
                 self.terminate()
+            # self.currentState = dynamics.getCurrentState()
+            # self.currentCOMInWorldFrame = self.currentCOMInWorldFrame + desiredCommand.comTranslation
+            # if dynamics.hasFailed():
+            #     self.terminate()
                 
             self.currentRunningCost += self.computeCostFromMotion(desiredTaskMotion=self.desiredTaskMotion, 
                                                               command=desiredCommand, 
                                                               originalState=originalState, 
-                                                              currentState=self.currentState, 
+                                                              currentState=currentState, 
                                                               failureMessage=dynamics.getFailureMessage()); 
             self.lastCommand = desiredCommand
             failureMessage = dynamics.getFailureMessage()
@@ -123,7 +132,7 @@ class Simulation(CostEvaluator):
         currentFootState = currentState.footState
         dogModel = DogModel(originalState)
         distances = dogModel.getPostMotionFootDistancesFromIdeal(currentFootState, command.getTaskMotion())
-        normFootErr = np.sum(distances) / DogModel.maximumFootDistanceFromIdeal
+        normFootErr = np.sum(distances) / DogModel.maximumCOMTranslationDistance
         
         errors = np.array([normDistErr, normAngErr, 
                            normDDist, normDAng, 

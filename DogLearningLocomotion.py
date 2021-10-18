@@ -37,13 +37,12 @@ desiredMotionsList = generateTaskMotionsList()
 
 costWeights = np.array([1.,1.,
                         1.,1.,
-                        1.,
+                        20.,
                         300.,
                         100.])
 numSteps = 10
-simulationName = "n3"
-readSimulationName = "n3"
-
+simulationName = "n5"
+readSimulationName = "n5"
 
 
 def runOptimizer():
@@ -54,7 +53,7 @@ def runOptimizer():
                                     costWeights = costWeights)
         
     optimizationParameters = OptimizationParameters(optimizationStepSize = 0.1,
-                                                    gradientStepSize = 0.001,
+                                                    gradientStepFactor = 0.1,
                                                     convergenceThreshold = 0.001,
                                                     optimizationStepSizeScaling = 0.95,
                                                     scaleEveryNSteps = 50)                       
@@ -68,16 +67,16 @@ def runOptimizer():
 
 def main():
     # runOptimizer()
-    plotParameterHistory()
-    plotCostHistory()
-    # drawSimulationVisualizer()
+    # plotParameterHistory()
+    # plotCostHistory()
+    drawSimulationVisualizer()
     
     
 def plotParameterHistory():
     parameterHistory = np.loadtxt(".\\data\\" +readSimulationName + '_parameterHistory.dat')
     plotParameters(parameterHistory)
-    print(parameterHistory[0,:])
-    print(parameterHistory[0,:] - parameterHistory[-1,:])
+    print(footModel.convertParametersToModel(parameterHistory[0,:] - parameterHistory[-1,:]))
+
     
 def plotCostHistory():
     fig = plt.figure()
@@ -85,11 +84,18 @@ def plotCostHistory():
     costHistory = np.loadtxt(".\\data\\" +readSimulationName + '_costHistory.dat')
     ax.plot(range(0,np.size(costHistory)), costHistory)
     ax.set_yscale('log')
+    ax.set_ylabel('Cost')
+    ax.set_xlabel('Optimization Step')
+    ax.set_title('Convergence Graph')
 
     print(costHistory[-1])
     
 def drawSimulationVisualizer():
-    finalParameters = np.loadtxt(".\\data\\" +readSimulationName + '_parameters.dat')
+    costHistory = np.loadtxt(".\\data\\" +readSimulationName + '_costHistory.dat')
+    parameterHistory = np.loadtxt(".\\data\\" +readSimulationName + '_parameterHistory.dat')
+    bestCostIndex = np.argmin(costHistory)
+    finalParameters = parameterHistory[bestCostIndex, :]
+    # finalParameters = np.loadtxt(".\\data\\" +readSimulationName + '_parameters.dat')
     simulation = Simulation(initialState=initialStatesList[0], 
                             footModel=footModel, 
                             desiredTaskMotion=desiredMotionsList[0], 
@@ -137,11 +143,16 @@ def generateInitialStatesList():
     return [initialState]
 
 def plotParameters(parameterHistory):
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
     r, c = parameterHistory.shape
     numItems = r
     length = c
     for i in range(0,length):
-        plt.plot(range(0,numItems), parameterHistory[:,i]);
+        ax.plot(range(0,numItems), parameterHistory[:,i]);
+    ax.set_ylabel('Parameter Value')
+    ax.set_xlabel('Optimization Step')
+    ax.set_title('Parameters')
 
 if __name__ == "__main__":
     main()

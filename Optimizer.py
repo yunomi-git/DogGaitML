@@ -13,19 +13,11 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 class Optimizer(ABC):
-    # value: np array
-    # costEvaluator: class
-    # optimizationParameters:
-    #       optimizationStepSize
-    #       gradientStepSize
-    #       convergenceThreshold
-    #       optimizationStepSizeScaling
-    #       scaleEveryNSteps
     def __init__(self, initialValue, costEvaluator, optimizationParameters):
         self.value = initialValue;
         self.costEvaluator = costEvaluator;
         self.optimizationStepSize = optimizationParameters.optimizationStepSize;
-        self.gradientStepSize = optimizationParameters.gradientStepSize;
+        self.gradientStepFactor = optimizationParameters.gradientStepFactor;
         self.convergenceThreshold = optimizationParameters.convergenceThreshold;
         self.optimizationStepSizeScaling = optimizationParameters.optimizationStepSizeScaling;
         self.scaleEveryNSteps = optimizationParameters.scaleEveryNSteps
@@ -60,8 +52,6 @@ class Optimizer(ABC):
     def hasReachedMinimum(self):
         if len(self.costHistory) < 2:
             return False;
-        # currentHistory = self.history[-1];
-        # lastHistory = self.history[-2];
         currentCost = self.costHistory[-1];
         lastCost = self.costHistory[-2];
         return abs(lastCost - currentCost) < self.convergenceThreshold;
@@ -79,12 +69,11 @@ class GradientDescentOptimizer(Optimizer):
     def findValueGradient(self):
         numDim = self.value.size;
         valueGradient = np.zeros(numDim);
-        # currentHistory = self.history[-1]
         currentCost = self.costHistory[-1];
         #construct gradient by sampling in every direction
         for i in range(numDim):
             valueTemp = np.copy(self.value);
-            valueTemp[i] += self.gradientStepSize;
+            valueTemp[i] += self.gradientStepFactor * self.optimizationStepSize;
             costDim = self.costEvaluator.getCost(valueTemp);
             valueGradient[i] = currentCost - costDim;
         gradientNorm = np.linalg.norm(valueGradient);
@@ -95,7 +84,7 @@ class GradientDescentOptimizer(Optimizer):
 @dataclass
 class OptimizationParameters:
     optimizationStepSize : float
-    gradientStepSize : float
+    gradientStepFactor : float
     convergenceThreshold : float
     optimizationStepSizeScaling : float
     scaleEveryNSteps : int

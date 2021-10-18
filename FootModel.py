@@ -112,17 +112,21 @@ class SimpleFootModel(FootModel):
     
     # chooses highest score
     def getBestOutputIndexFromList(self, outputList):
-        firstOutput = outputList[0]
-        bestValue = firstOutput[0]
-        bestIndex = 0;
-        i = 0;
-        for output in outputList:
-            value = output[0]
-            if value > bestValue:
-                bestIndex = i
-                bestValue = value
-            i += 1
-        return bestIndex
+        # firstOutput = outputList[0]
+        # bestValue = firstOutput[0]
+        # bestIndex = 0;
+        # i = 0;
+        # for output in outputList:
+        #     value = output[0]
+        #     if value > bestValue:
+        #         bestIndex = i
+        #         bestValue = value
+        #     i += 1
+        if outputList[0][0] > outputList[1][0]:
+            return 0
+        else:
+            return 1
+        # return bestIndex
             
     def getNumParameters(self):
         return (self.expandedStateDims * self.outputDims)
