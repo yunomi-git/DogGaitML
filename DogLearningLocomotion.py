@@ -41,8 +41,8 @@ costWeights = np.array([1.,1.,
                         300.,
                         100.])
 numSteps = 10
-simulationName = "n5"
-readSimulationName = "n5"
+simulationName = "n7"
+readSimulationName = "n7"
 
 
 def runOptimizer():
@@ -52,7 +52,7 @@ def runOptimizer():
                                     numSteps = numSteps, 
                                     costWeights = costWeights)
         
-    optimizationParameters = OptimizationParameters(optimizationStepSize = 0.1,
+    optimizationParameters = OptimizationParameters(optimizationStepSize = 1,
                                                     gradientStepFactor = 0.1,
                                                     convergenceThreshold = 0.001,
                                                     optimizationStepSizeScaling = 0.95,
