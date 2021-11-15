@@ -9,6 +9,8 @@ from CostEvaluator import CostEvaluator
 from mpl_toolkits.mplot3d import Axes3D
 from GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
 import numpy as np
+import matplotlib.pyplot as plt;
+
 
 class ParabolicCostEvaluator(CostEvaluator):
     def __init__(self, a, b):
@@ -60,7 +62,7 @@ def optimizeParabaloid():
     initialValue = np.random.rand(10, 2) * 5;
     costEvaluator = ParaboloidCostEvaluator(a, b);
     optimizer = SimpleGAOptimizer(initialValue, costEvaluator, optimizationParameters);
-    optimizer.optimizeUntilMaxCount(1000, 0.00);
+    optimizer.optimizeUntilMaxCount(100, 0.00);
     valueHistory, costHistory = optimizer.getFullHistory();
     
     count = len(costHistory);
@@ -76,6 +78,8 @@ def optimizeParabaloid():
     print(xval[-1])
     print(yval[-1])
     
+    plotCostHistory(costHistory)
+    
 def plotParaboloic(ax, a, b):
     x = np.linspace(0,2,20);
     y = np.linspace(0,2,20);
@@ -85,6 +89,18 @@ def plotParaboloic(ax, a, b):
     
 def main():
     optimizeParabaloid()
+    
+
+def plotCostHistory(costHistory):
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    ax.plot(range(0,np.size(costHistory)), costHistory)
+    ax.set_yscale('log')
+    ax.set_ylabel('Cost')
+    ax.set_xlabel('Optimization Step')
+    ax.set_title('Convergence Graph')
+
+    print(costHistory[-1])
     
     
 if __name__ == "__main__":

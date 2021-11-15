@@ -32,7 +32,7 @@ footModel = SimpleFootModel()
 numParameters = footModel.getNumParameters()
 
 scale = 1.
-populationSize = 10
+populationSize = 30
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
 initialStatesList = generateInitialStatesList()
 desiredMotionsList = generateTaskMotionsList()
@@ -42,9 +42,9 @@ costWeights = np.array([1.,1.,
                         20.,
                         300.,
                         100.])
-numSteps = 10
-simulationName = "GA1"
-readSimulationName = "GA1"
+numSteps = 4
+simulationName = "GA2"
+readSimulationName = "GA2"
 
 
 def runOptimizer():
@@ -54,9 +54,9 @@ def runOptimizer():
                                     numSteps = numSteps, 
                                     costWeights = costWeights)
         
-    optimizationParameters = SimpleGAParameters(crossoverRatio=0.3, 
-                                                mutationChance=0.3, 
-                                                mutationMagnitude=1.0,
+    optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
+                                                mutationChance=0.5, 
+                                                mutationMagnitude=10,
                                                 decreaseMutationEveryNSteps=10,
                                                 mutationLearningRation=0.7);                    
     optimizer = SimpleGAOptimizer(initialParameters, costEvaluator, optimizationParameters)
