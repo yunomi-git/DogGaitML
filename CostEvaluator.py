@@ -14,21 +14,3 @@ class CostEvaluator(ABC):
     def getCost(self, value):
         pass
     
-class ParabolicCostEvaluator(CostEvaluator):
-    def __init__(self, a, b):
-        self.a = a;
-        self.b = b
-        
-    def getCost(self, value):
-        x = value[0];
-        return (self.a * x * x + self.b * x)
-    
-class ParaboloidCostEvaluator(CostEvaluator):
-    def __init__(self, a, b):
-        self.a = a;
-        self.b = b
-        
-    def getCost(self, value):
-        x = value[0];
-        y = value[1];
-        return (self.a * x * x + self.b * y * y)
