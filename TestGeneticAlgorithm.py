@@ -54,11 +54,13 @@ def optimizeParabola() :
 def optimizeParabaloid():
     a = 1.0
     b = 1.0
-    optimizationParameters = SimpleGAParameters(crossoverRatio=0.3, 
-                                                mutationChance=0.3, 
-                                                mutationMagnitude=1.0,
-                                                decreaseMutationEveryNSteps=10,
-                                                mutationLearningRation=0.7);
+    optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
+                                                mutationChance=0.9, 
+                                                mutationMagnitude=3.0,
+                                                decreaseMutationMagnitudeEveryNSteps=10,
+                                                mutationMagnitudeLearningRate=0.7,
+                                                decreaseMutationChanceEveryNSteps=10,
+                                                mutationChanceLearningRate=0.7);
     initialValue = np.random.rand(10, 2) * 5;
     costEvaluator = ParaboloidCostEvaluator(a, b);
     optimizer = SimpleGAOptimizer(initialValue, costEvaluator, optimizationParameters);

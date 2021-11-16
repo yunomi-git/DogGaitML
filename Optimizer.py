@@ -20,6 +20,8 @@ class Optimizer(ABC):
         self.costHistory = np.array([costEvaluator.getCost(initialValue)])
         
         self.numFeatures = initialValue.size
+        
+        self.endEarly = False
     
     @abstractmethod
     def takeStepAndGetValue(self):
@@ -47,12 +49,18 @@ class Optimizer(ABC):
     
     def optimizeUntilMaxCount(self, maxCount, convergenceThreshold):
         self.stepCount = 0;
-        while (~self.hasReachedMinimum(convergenceThreshold) and self.stepCount < maxCount):
+        while ~(self.hasReachedMinimum(convergenceThreshold) or self.stepCount >= maxCount):
             self.step();
             if (self.stepCount % 20 == 0):
                 print("step: " + str(self.stepCount))
                 value, cost = self.getCurrentStateAndCost()
                 print("cost: " + str(cost))
+      
+    # def stoppingConditionsHaveBeenMet(self):
+    #     return self.hasReachedMinimum(convergenceThreshold) or self.stepCount >= maxCount
+    
+    def bindEndEarly(self, endEarly):
+        self.endEarly = endEarly
 
 class GradientDescentOptimizer(Optimizer):
     def __init__(self, initialValue, costEvaluator, optimizationParameters):

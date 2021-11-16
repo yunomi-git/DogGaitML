@@ -57,8 +57,10 @@ class SimpleGAParameters:
     crossoverRatio: float
     mutationChance: float
     mutationMagnitude: float
-    decreaseMutationEveryNSteps: int
-    mutationLearningRation: float
+    decreaseMutationMagnitudeEveryNSteps: int
+    mutationMagnitudeLearningRate: float
+    decreaseMutationChanceEveryNSteps: int
+    mutationChanceLearningRate: float
     
 class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
     def __init__(self, initialPopulation, costEvaluator, simpleGAParameters):
@@ -105,6 +107,8 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
         return child
     
     def postStepActions(self):
-        if ((self.stepCount + 1) % self.simpleGAParameters.decreaseMutationEveryNSteps == 0):
-            self.simpleGAParameters.mutationMagnitude *= self.simpleGAParameters.mutationLearningRation
+        if ((self.stepCount + 1) % self.simpleGAParameters.decreaseMutationMagnitudeEveryNSteps == 0):
+            self.simpleGAParameters.mutationMagnitude *= self.simpleGAParameters.mutationMagnitudeLearningRate
+        if ((self.stepCount + 1) % self.simpleGAParameters.decreaseMutationChanceEveryNSteps == 0):
+            self.simpleGAParameters.mutationChance *= self.simpleGAParameters.mutationChanceLearningRate
 

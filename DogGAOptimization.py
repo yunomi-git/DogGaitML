@@ -15,6 +15,8 @@ import pyglet
 from pyglet.window import mouse
 from VisualizerSimulation import VisualizerSimulation
 import pickle
+from pynput import keyboard
+
 
 def generateInitialStatesList():
     dogModel = DogModel()
@@ -31,8 +33,8 @@ def generateTaskMotionsList():
 footModel = SimpleFootModel()
 numParameters = footModel.getNumParameters()
 
-scale = 1.
-populationSize = 30
+scale = 5.
+populationSize = 100
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
 initialStatesList = generateInitialStatesList()
 desiredMotionsList = generateTaskMotionsList()
@@ -42,25 +44,30 @@ costWeights = np.array([1.,1.,
                         20.,
                         300.,
                         100.])
-numSteps = 4
-simulationName = "GA2"
-readSimulationName = "GA2"
+numSteps = 5
+simulationName = "GA3"
+readSimulationName = "GA3"
+
+endOptimizerEarly = False
 
 
-def runOptimizer():
+
+def runOptimizer():    
     costEvaluator = BatchSimulation(initialStatesList = initialStatesList, 
                                     footModel = footModel, 
                                     desiredMotionsList = desiredMotionsList, 
                                     numSteps = numSteps, 
                                     costWeights = costWeights)
         
-    optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
-                                                mutationChance=0.5, 
+    optimizationParameters = SimpleGAParameters(crossoverRatio=0.7, 
+                                                mutationChance=0.9, 
                                                 mutationMagnitude=10,
-                                                decreaseMutationEveryNSteps=10,
-                                                mutationLearningRation=0.7);                    
+                                                decreaseMutationMagnitudeEveryNSteps=100,
+                                                mutationMagnitudeLearningRate=0.7,
+                                                decreaseMutationChanceEveryNSteps=100,
+                                                mutationChanceLearningRate=0.7);                    
     optimizer = SimpleGAOptimizer(initialParameters, costEvaluator, optimizationParameters)
-    optimizer.optimizeUntilMaxCount(10000, 0);
+    optimizer.optimizeUntilMaxCount(100000, 0);
     parameterHistory, costHistory = optimizer.getFullHistory();
     finalParameters = parameterHistory[-1,:]
     np.savetxt(".\\data\\" +simulationName + '_parameterHistory.dat', parameterHistory)
@@ -68,12 +75,12 @@ def runOptimizer():
     np.savetxt(".\\data\\"+simulationName + '_parameters.dat', finalParameters)
 
 def main():
-    # runOptimizer()
+    runOptimizer()
     # plotParameterHistory()
     # plotCostHistory()
-    drawSimulationVisualizer()
+    # drawSimulationVisualizer()
     
-    
+
 def plotParameterHistory():
     parameterHistory = np.loadtxt(".\\data\\" +readSimulationName + '_parameterHistory.dat')
     plotParameters(parameterHistory)
