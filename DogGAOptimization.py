@@ -35,8 +35,8 @@ footModel = SimpleFootModel()
 numParameters = footModel.getNumParameters()
 
 
-scale = 5.
-populationSize = 100
+scale = 10.
+populationSize = 500
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
 initialStatesList = generateInitialStatesList()
 desiredMotionsList = generateTaskMotionsList()
@@ -47,26 +47,45 @@ costWeights = np.array([1.,1.,
                         300.,
                         100.])
 numSteps = 4
-optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
-                                                mutationChance=0.5, 
-                                                mutationMagnitude=10,
-                                                decreaseMutationEveryNSteps=10,
-                                                mutationLearningRation=0.7);   
+optimizationParameters = SimpleGAParameters(crossoverRatio=0.7, 
+                                            mutationChance=0.9, 
+                                            mutationMagnitude=10,
+                                            decreaseMutationMagnitudeEveryNSteps=10,
+                                            mutationMagnitudeLearningRate=0.8,
+                                            decreaseMutationChanceEveryNSteps=10,
+                                            mutationChanceLearningRate=0.8);   
 
-optimizationEndConditions = OptimizationEndConditions(maxSteps=1000,
+
+printEveryNSteps = 100
+optimizationEndConditions = OptimizationEndConditions(maxSteps=100000,
                                                       convergenceThreshold=0.0)
 
-simulationName = "test"
-readSimulationName = "test"
+endEarly = False
+
+simulationName = "GA3"
+readSimulationName = "GA3"
 
 def runOptimizer():    
+    listener = keyboard.Listener(on_press=on_press)
+    listener.start()
+
     costEvaluator = BatchSimulation(initialStatesList = initialStatesList, 
                                     footModel = footModel, 
                                     desiredMotionsList = desiredMotionsList, 
                                     numSteps = numSteps, 
                                     costWeights = costWeights)
     optimizer = SimpleGAOptimizer(initialParameters, costEvaluator, optimizationParameters)
-    optimizer.optimizeUntilEndCondition(optimizationEndConditions);
+    optimizer.printEveryNSteps = printEveryNSteps
+    # optimizer.optimizeUntilEndCondition(optimizationEndConditions);
+    optimizer.setOptimizationEndConditions(optimizationEndConditions)
+    while (not optimizer.hasReachedEndCondition()):
+        optimizer.step();
+        if (endEarly):
+            optimizer.endEarly()
+        if (optimizer.stepCount % optimizer.printEveryNSteps == 0):
+            print("step: " + str(optimizer.stepCount))
+            value, cost = optimizer.getCurrentStateAndCost()
+            print("cost: " + str(cost))
     
 
     parameterHistory, costHistory = optimizer.getFullHistory();
@@ -74,6 +93,15 @@ def runOptimizer():
     np.savetxt(".\\data\\" +simulationName + '_parameterHistory.dat', parameterHistory)
     np.savetxt(".\\data\\"+simulationName + '_costHistory.dat', costHistory)
     np.savetxt(".\\data\\"+simulationName + '_parameters.dat', finalParameters)
+
+def on_press(key):
+    try:
+        k = key.char
+        if k == 'q':
+            global endEarly
+            endEarly = True
+    except:
+        pass
 
 def main():
     runOptimizer()
