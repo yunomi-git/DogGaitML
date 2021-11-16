@@ -24,6 +24,7 @@ class Optimizer(ABC):
         self.maxSteps = 1
         self.printEveryNSteps = 20
         self.convergenceThreshold = 0.0
+
         self.endEarly = False
     
     @abstractmethod
@@ -69,11 +70,18 @@ class Optimizer(ABC):
         self.setOptimizationEndConditions(optimizationEndConditions)
         self.stepCount = 0;
         while (not self.hasReachedEndCondition()):
+
             self.step();
             if (self.stepCount % self.printEveryNSteps == 0):
                 print("step: " + str(self.stepCount))
                 value, cost = self.getCurrentStateAndCost()
                 print("cost: " + str(cost))
+      
+    # def stoppingConditionsHaveBeenMet(self):
+    #     return self.hasReachedMinimum(convergenceThreshold) or self.stepCount >= maxCount
+    
+    def bindEndEarly(self, endEarly):
+        self.endEarly = endEarly
 
 @dataclass
 class OptimizationEndConditions:

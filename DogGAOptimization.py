@@ -16,6 +16,8 @@ import pyglet
 from pyglet.window import mouse
 from VisualizerSimulation import VisualizerSimulation
 import pickle
+from pynput import keyboard
+
 
 def generateInitialStatesList():
     dogModel = DogModel()
@@ -32,8 +34,9 @@ def generateTaskMotionsList():
 footModel = SimpleFootModel()
 numParameters = footModel.getNumParameters()
 
-scale = 1.
-populationSize = 20
+
+scale = 5.
+populationSize = 100
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
 initialStatesList = generateInitialStatesList()
 desiredMotionsList = generateTaskMotionsList()
@@ -56,16 +59,16 @@ optimizationEndConditions = OptimizationEndConditions(maxSteps=1000,
 simulationName = "test"
 readSimulationName = "test"
 
-def runOptimizer():
+def runOptimizer():    
     costEvaluator = BatchSimulation(initialStatesList = initialStatesList, 
                                     footModel = footModel, 
                                     desiredMotionsList = desiredMotionsList, 
                                     numSteps = numSteps, 
                                     costWeights = costWeights)
-        
     optimizer = SimpleGAOptimizer(initialParameters, costEvaluator, optimizationParameters)
     optimizer.optimizeUntilEndCondition(optimizationEndConditions);
     
+
     parameterHistory, costHistory = optimizer.getFullHistory();
     finalParameters = parameterHistory[-1,:]
     np.savetxt(".\\data\\" +simulationName + '_parameterHistory.dat', parameterHistory)
@@ -77,8 +80,9 @@ def main():
     plotParameterHistory()
     plotCostHistory()
     # drawSimulationVisualizer()
+
     
-    
+
 def plotParameterHistory():
     parameterHistory = np.loadtxt(".\\data\\" +readSimulationName + '_parameterHistory.dat')
     plotParameters(parameterHistory)

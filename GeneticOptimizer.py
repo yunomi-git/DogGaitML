@@ -14,18 +14,25 @@ import random
 
 class GeneticAlgorithmOptimizer(Optimizer):
     def __init__(self, initialPopulation, costEvaluator):
-        self.population = initialPopulation
         initialValue = initialPopulation[0] # arbitraty: choose first value
         super().__init__(initialValue, costEvaluator);
+        self.population = initialPopulation
         self.populationSize = np.ma.size(initialPopulation, 0)
+        self.costsList = self.getCostOfPopulation(self.population)
+        
+        
+        
         
     def takeStepAndGetValue(self):
-        costsList = self.getCostOfPopulation(self.population)
-        nextPopulation = self.getNextPopulation(costsList, self.population)
-
-        minCostIndex = costsList.index(min(costsList))
-        value = self.population[minCostIndex, :]
+        nextPopulation = self.getNextPopulation(self.costsList, self.population)
+        
         self.population = nextPopulation
+        self.costList = self.getCostOfPopulation(self.population)
+    
+        minCostIndex = self.costList.index(min(self.costList))
+        
+        value = self.population[minCostIndex, :]
+
         
         self.postStepActions()
         return value
@@ -40,8 +47,8 @@ class GeneticAlgorithmOptimizer(Optimizer):
     
     def getCostOfPopulation(self, population):
         costsList = []
-        for value in population:
-            cost = self.costEvaluator.getCost(value)
+        for i in range(0, self.populationSize):
+            cost = self.costEvaluator.getCost(population[i,:])
             costsList.append(cost)
         return costsList
         
@@ -50,8 +57,10 @@ class SimpleGAParameters:
     crossoverRatio: float
     mutationChance: float
     mutationMagnitude: float
-    decreaseMutationEveryNSteps: int
-    mutationLearningRation: float
+    decreaseMutationMagnitudeEveryNSteps: int
+    mutationMagnitudeLearningRate: float
+    decreaseMutationChanceEveryNSteps: int
+    mutationChanceLearningRate: float
     
 class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
     def __init__(self, initialPopulation, costEvaluator, simpleGAParameters):
@@ -66,7 +75,7 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
             parent1, parent2 = self.choose2Parents(population, costsList)
             child = self.getChildFromParents(parent1, parent2)
             children = np.append(children, np.array([child]), axis=0)
-            
+        
         return children
         
     def choose2Parents(self, population, costsList):
@@ -98,6 +107,8 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
         return child
     
     def postStepActions(self):
-        if ((self.stepCount + 1) % self.simpleGAParameters.decreaseMutationEveryNSteps == 0):
-            self.simpleGAParameters.mutationMagnitude *= self.simpleGAParameters.mutationLearningRation
+        if ((self.stepCount + 1) % self.simpleGAParameters.decreaseMutationMagnitudeEveryNSteps == 0):
+            self.simpleGAParameters.mutationMagnitude *= self.simpleGAParameters.mutationMagnitudeLearningRate
+        if ((self.stepCount + 1) % self.simpleGAParameters.decreaseMutationChanceEveryNSteps == 0):
+            self.simpleGAParameters.mutationChance *= self.simpleGAParameters.mutationChanceLearningRate
 
