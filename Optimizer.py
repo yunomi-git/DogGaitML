@@ -21,6 +21,10 @@ class Optimizer(ABC):
         
         self.numFeatures = initialValue.size
         
+        self.maxSteps = 1
+        self.printEveryNSteps = 20
+        self.convergenceThreshold = 0.0
+
         self.endEarly = False
     
     @abstractmethod
@@ -47,11 +51,28 @@ class Optimizer(ABC):
         lastCost = self.costHistory[-2];
         return abs(lastCost - currentCost) < convergenceThreshold;
     
-    def optimizeUntilMaxCount(self, maxCount, convergenceThreshold):
+    def printEveryNSteps(self, nSteps):
+        self.printEveryNSteps = nSteps
+    
+    def setOptimizationEndConditions(self, optimizationEndConditions):
+        self.maxSteps = optimizationEndConditions.maxSteps
+        self.convergenceThreshold = optimizationEndConditions.convergenceThreshold
+        
+    def hasReachedEndCondition(self):
+        return (((self.maxSteps > 0) and (self.stepCount >= self.maxSteps)) or
+                (self.hasReachedMinimum(self.convergenceThreshold)) or
+                (self.endEarly))
+    
+    def endEarly(self):
+        self.endEarly = True
+    
+    def optimizeUntilEndCondition(self, optimizationEndConditions):
+        self.setOptimizationEndConditions(optimizationEndConditions)
         self.stepCount = 0;
-        while ~(self.hasReachedMinimum(convergenceThreshold) or self.stepCount >= maxCount):
+        while (not self.hasReachedEndCondition()):
+
             self.step();
-            if (self.stepCount % 20 == 0):
+            if (self.stepCount % self.printEveryNSteps == 0):
                 print("step: " + str(self.stepCount))
                 value, cost = self.getCurrentStateAndCost()
                 print("cost: " + str(cost))
@@ -62,6 +83,11 @@ class Optimizer(ABC):
     def bindEndEarly(self, endEarly):
         self.endEarly = endEarly
 
+@dataclass
+class OptimizationEndConditions:
+    maxSteps : int
+    convergenceThreshold : float
+    
 class GradientDescentOptimizer(Optimizer):
     def __init__(self, initialValue, costEvaluator, optimizationParameters):
         super().__init__(initialValue, costEvaluator);

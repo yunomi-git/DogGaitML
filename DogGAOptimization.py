@@ -7,6 +7,7 @@ Created on Sun Nov 14 19:25:55 2021
 
 import numpy as np;
 from GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
+from Optimizer import OptimizationEndConditions
 from FootModel import SimpleFootModel
 from Simulation import BatchSimulation, Simulation
 from DogUtil import DogModel, State, TaskMotion
@@ -33,6 +34,7 @@ def generateTaskMotionsList():
 footModel = SimpleFootModel()
 numParameters = footModel.getNumParameters()
 
+
 scale = 5.
 populationSize = 100
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
@@ -44,13 +46,18 @@ costWeights = np.array([1.,1.,
                         20.,
                         300.,
                         100.])
-numSteps = 5
-simulationName = "GA3"
-readSimulationName = "GA3"
+numSteps = 4
+optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
+                                                mutationChance=0.5, 
+                                                mutationMagnitude=10,
+                                                decreaseMutationEveryNSteps=10,
+                                                mutationLearningRation=0.7);   
 
-endOptimizerEarly = False
+optimizationEndConditions = OptimizationEndConditions(maxSteps=1000,
+                                                      convergenceThreshold=0.0)
 
-
+simulationName = "test"
+readSimulationName = "test"
 
 def runOptimizer():    
     costEvaluator = BatchSimulation(initialStatesList = initialStatesList, 
@@ -58,16 +65,10 @@ def runOptimizer():
                                     desiredMotionsList = desiredMotionsList, 
                                     numSteps = numSteps, 
                                     costWeights = costWeights)
-        
-    optimizationParameters = SimpleGAParameters(crossoverRatio=0.7, 
-                                                mutationChance=0.9, 
-                                                mutationMagnitude=10,
-                                                decreaseMutationMagnitudeEveryNSteps=100,
-                                                mutationMagnitudeLearningRate=0.7,
-                                                decreaseMutationChanceEveryNSteps=100,
-                                                mutationChanceLearningRate=0.7);                    
     optimizer = SimpleGAOptimizer(initialParameters, costEvaluator, optimizationParameters)
-    optimizer.optimizeUntilMaxCount(100000, 0);
+    optimizer.optimizeUntilEndCondition(optimizationEndConditions);
+    
+
     parameterHistory, costHistory = optimizer.getFullHistory();
     finalParameters = parameterHistory[-1,:]
     np.savetxt(".\\data\\" +simulationName + '_parameterHistory.dat', parameterHistory)
@@ -76,9 +77,10 @@ def runOptimizer():
 
 def main():
     runOptimizer()
-    # plotParameterHistory()
-    # plotCostHistory()
+    plotParameterHistory()
+    plotCostHistory()
     # drawSimulationVisualizer()
+
     
 
 def plotParameterHistory():
