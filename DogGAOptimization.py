@@ -35,13 +35,9 @@ footModel = SimpleFootModel()
 numParameters = footModel.getNumParameters()
 
 
-<<<<<<< Updated upstream
 scale = 5.
-populationSize = 100
-=======
-scale = 10.
-populationSize = 30
->>>>>>> Stashed changes
+populationSize = 10
+
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
 initialStatesList = generateInitialStatesList()
 desiredMotionsList = generateTaskMotionsList()
@@ -52,17 +48,7 @@ costWeights = np.array([1.,1.,
                         300.,
                         100.])
 numSteps = 4
-<<<<<<< Updated upstream
-optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
-                                                mutationChance=0.5, 
-                                                mutationMagnitude=10,
-                                                decreaseMutationEveryNSteps=10,
-                                                mutationLearningRation=0.7);   
 
-optimizationEndConditions = OptimizationEndConditions(maxSteps=1000,
-                                                      convergenceThreshold=0.0)
-
-=======
 optimizationParameters = SimpleGAParameters(crossoverRatio=0.7, 
                                             mutationChance=0.5, 
                                             mutationMagnitude=10,
@@ -72,13 +58,12 @@ optimizationParameters = SimpleGAParameters(crossoverRatio=0.7,
                                             mutationChanceLearningRate=1);   
 
 
-printEveryNSteps = 40
-optimizationEndConditions = OptimizationEndConditions(maxSteps=5000,
+printEveryNSteps = 1
+optimizationEndConditions = OptimizationEndConditions(maxSteps=10,
                                                       convergenceThreshold=0.0)
 
 endEarly = False
 
->>>>>>> Stashed changes
 simulationName = "test"
 readSimulationName = "test"
 
