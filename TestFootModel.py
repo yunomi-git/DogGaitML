@@ -63,15 +63,27 @@ def testGetExpandedStates():
         print(".")
 
 def testGetBestOutput():
-    outputList = [];
+    
     bestOutput = np.array([1., 4., 3., 5., 2., 4.])
-    outputList.append(np.array([0.5, 0., 5., 5., 3., 4.]))
+    worstOutput = np.array([0.5, 0., 5., 5., 3., 4.])
+    outputList = [];
+    outputList.append(worstOutput)
     outputList.append(bestOutput)
-    outputList.append(np.array([-1., 4., 3., 5., 2., 4.]))
+    # outputList.append(np.array([-1., 4., 3., 5., 2., 4.]))
     
     footModel = fmodel.SimpleFootModel(np.ones(6*31))
     
     if (not (footModel.getBestOutputIndexFromList(outputList) == 1)):
+        print("\n----")
+        print(footModel.getBestOutputIndexFromList(outputList))
+        print("error in testGetBestOutput\n----")
+    else:
+        print(".")
+        
+    outputList = [];
+    outputList.append(bestOutput)
+    outputList.append(worstOutput)
+    if (not (footModel.getBestOutputIndexFromList(outputList) == 0)):
         print("\n----")
         print(footModel.getBestOutputIndexFromList(outputList))
         print("error in testGetBestOutput\n----")
