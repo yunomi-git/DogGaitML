@@ -25,7 +25,7 @@ class Optimizer(ABC):
         self.printEveryNSteps = 20
         self.convergenceThreshold = 0.0
 
-        self.endEarly = False
+        self.endNow = False
     
     @abstractmethod
     def takeStepAndGetValue(self):
@@ -51,9 +51,6 @@ class Optimizer(ABC):
         lastCost = self.costHistory[-2];
         return abs(lastCost - currentCost) < convergenceThreshold;
     
-    def printEveryNSteps(self, nSteps):
-        self.printEveryNSteps = nSteps
-    
     def setOptimizationEndConditions(self, optimizationEndConditions):
         self.maxSteps = optimizationEndConditions.maxSteps
         self.convergenceThreshold = optimizationEndConditions.convergenceThreshold
@@ -61,10 +58,10 @@ class Optimizer(ABC):
     def hasReachedEndCondition(self):
         return (((self.maxSteps > 0) and (self.stepCount >= self.maxSteps)) or
                 (self.hasReachedMinimum(self.convergenceThreshold)) or
-                (self.endEarly))
+                (self.endNow))
     
     def endEarly(self):
-        self.endEarly = True
+        self.endNow = True
     
     def optimizeUntilEndCondition(self, optimizationEndConditions):
         self.setOptimizationEndConditions(optimizationEndConditions)
