@@ -9,29 +9,26 @@ from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 import numpy as np
+from CostEvaluator import CostEvaluator
 
-class CostEvaluator2D(ABC):
+class CostEvaluator2D(CostEvaluator):
     def __init__(self):
         pass
     
-    
-    def getCostGrid(self, x, y):
-        xLength = x.size
-        x = x.reshape(xLength, 1)
-        yLength = y.size
-        y = y.reshape(1, yLength)    
-        return self.getCost(x, y)
-    
-    def getCostSequence(self, x, y):
-        # xLength = x.size
-        # x = x.reshape(1, xLength)
+    def getCostMesh(self, xArr, yArr):
+        xLength = xArr.size
+        yLength = yArr.size
+        z = np.empty((xLength, yLength))
+        for ix in range(xLength):
+            for iy in range(yLength):
+                value = np.array([xArr[ix], yArr[iy]])
+                z[ix,iy] = self.getCost(value)
+        return z
+        # 
+        # x = x.reshape(xLength, 1)
         # yLength = y.size
         # y = y.reshape(1, yLength)    
-        return self.getCost(x, y)   
-    
-    @abstractmethod
-    def getCost(self, x, y):
-        pass
+        # return self.getCost(x, y)
     
 class ParaboloidCostEvaluator(CostEvaluator2D):
     def __init__(self, a, b, c, d, e):
@@ -41,7 +38,9 @@ class ParaboloidCostEvaluator(CostEvaluator2D):
         self.d = d
         self.e = e
         
-    def getCost(self, x, y):
+    def getCost(self, value):
+        x = value[0]
+        y = value[1]
         return (self.a * x * x + self.b * y * y + 
                 self.c * x + self.d * y +
                 self.e * x * y)
@@ -51,15 +50,13 @@ class SmithCostEvaluator(CostEvaluator2D):
         self.a = a
         self.b = b
     
-    def getCost(self, x, y):
-        return self.a * x * (np.cos(self.b * x * y + 1/y) + y)
+    def getCost(self, value):
+        x = value[0]
+        y = value[1]
+        return self.a * (x * (np.cos(self.b * x * y + 1/y) + x) + y * y) + 1
 
 
-def getMeshCost(xMax, yMax, costEvaluator, resolution=20):
-    x = np.linspace(-xMax,xMax,resolution);
-    y = np.linspace(-yMax,yMax,resolution);
-    data = costEvaluator.getCostGrid(x, y)
-    return x, y, data
+
     
 class GeneticVisualizer():
     def __init__(self, costEvaluator, dataHistory):
@@ -106,7 +103,7 @@ class GeneticVisualizer():
         self.wMain.resize(800,500)
         
     def createCostSurface(self):
-        x, y, z = getMeshCost(self.xMax, self.yMax, self.costEvaluator, self.resolution)
+        x, y, z = self.getMeshCost()
     
         colors = np.empty((self.resolution, self.resolution, 4), dtype=np.float32)
         dataMax = z.max()
@@ -123,6 +120,12 @@ class GeneticVisualizer():
         
         p = gl.GLSurfacePlotItem(x=x, y=y, z=z, colors=colors, shader = 'shaded')
         self.w3d.addItem(p)
+        
+    def getMeshCost(self):
+        x = np.linspace(-self.xMax,self.xMax,self.resolution);
+        y = np.linspace(-self.yMax,self.yMax,self.resolution);
+        data = self.costEvaluator.getCostMesh(x, y)
+        return x, y, data
         
     def createButtons(self):  
         self.nextBtn = QtGui.QPushButton('+1')
@@ -151,7 +154,7 @@ class GeneticVisualizer():
         prevData = self.dataHistory[prevhistoryDisplayIndex]
         self.prevDataPlot.setData(pos=prevData, color=(0,1,0,0.5), 
                                   size=self.avgGridSize/30.0, pxMode=False)
-        data = dataHistory[self.historyDisplayIndex]
+        data = self.dataHistory[self.historyDisplayIndex]
         self.dataPlot.setData(pos=data, color=(0,1,1,1), 
                               size=self.avgGridSize/30.0, pxMode=False)
             
@@ -170,36 +173,40 @@ class GeneticVisualizer():
         g.setDepthValue(10)  # draw grid after surfaces since they may be translucent
         self.w3d.addItem(g)
 
-# ## Create a GL View widget to display data
-app = QtGui.QApplication([])
-
-xMax = 15
-yMax = 15
-costEvaluator = SmithCostEvaluator(0.05, 10)
-
-
-numData = 10
-numHistory = 10
-xData = (np.random.rand(numData, numHistory) - 0.5) * 2 * xMax
-yData = (np.random.rand(numData, numHistory) - 0.5) * 2 * yMax
-zData = costEvaluator.getCostSequence(xData, yData)
-
-dataHistory = []
-for i in range(numHistory):
-    data = np.empty((numData, 3))
-    data[:,0] = xData[i,:]
-    data[:,1] = yData[i,:]
-    data[:,2] = zData[i,:]
-    dataHistory.append(data)
-    
-visualizer = GeneticVisualizer(costEvaluator=costEvaluator,
-                               dataHistory=dataHistory)
-visualizer.setPlotRange(xMax = 15, yMax = 15)
-visualizer.setResolution(resolution=200)
-visualizer.visualize()
-
 
 if __name__ == '__main__':
+    app = QtGui.QApplication([])
+    xMax = 15
+    yMax = 15
+    costEvaluator = SmithCostEvaluator(0.05, 10)
+    
+    
+    numData = 10
+    numHistory = 10
+    xData = (np.random.rand(numData, numHistory) - 0.5) * 2 * xMax
+    yData = (np.random.rand(numData, numHistory) - 0.5) * 2 * yMax
+    zData = np.empty((numData, numHistory))
+    for iData in range(numData):
+        for iHistory in range(numHistory):
+            x = xData[iData, iHistory]
+            y = yData[iData, iHistory]
+            value = np.array([x,y])
+            z = costEvaluator.getCost(value)
+            zData[iData, iHistory] = z
+    
+    dataHistory = []
+    for i in range(numHistory):
+        data = np.empty((numData, 3))
+        data[:,0] = xData[i,:]
+        data[:,1] = yData[i,:]
+        data[:,2] = zData[i,:]
+        dataHistory.append(data)
+        
+    visualizer = GeneticVisualizer(costEvaluator=costEvaluator,
+                                   dataHistory=dataHistory)
+    visualizer.setPlotRange(xMax = 15, yMax = 15)
+    visualizer.setResolution(resolution=200)
+    visualizer.visualize()
     import sys
     if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
         QtGui.QApplication.instance().exec_()

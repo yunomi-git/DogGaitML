@@ -7,8 +7,8 @@ Created on Sat Oct  9 19:26:13 2021
 
 from dataclasses import dataclass
 import numpy as np
-from Polygon import Triangle2D
 import MathUtil as mu
+from Polygon import Triangle2D
 
 @dataclass
 class TaskMotion:

@@ -8,6 +8,7 @@ import matplotlib.pyplot as mpl;
 from CostEvaluator import CostEvaluator
 from mpl_toolkits.mplot3d import Axes3D
 from GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
+from Optimizer import OptimizationEndConditions
 import numpy as np
 import matplotlib.pyplot as plt;
 
@@ -64,7 +65,8 @@ def optimizeParabaloid():
     initialValue = np.random.rand(10, 2) * 5;
     costEvaluator = ParaboloidCostEvaluator(a, b);
     optimizer = SimpleGAOptimizer(initialValue, costEvaluator, optimizationParameters);
-    optimizer.optimizeUntilMaxCount(100, 0.00);
+    endConditions = OptimizationEndConditions(100, 0.00)
+    optimizer.optimizeUntilEndCondition(endConditions);
     valueHistory, costHistory = optimizer.getFullHistory();
     
     count = len(costHistory);
