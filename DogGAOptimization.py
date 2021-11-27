@@ -27,7 +27,7 @@ def generateInitialStatesList():
     return [initialState]
 
 def generateTaskMotionsList():
-    return [TaskMotion(5, 5, 3)]
+    return [TaskMotion(5, 0, 0)]
 
 
 #TODO find a way to save these to file
@@ -35,8 +35,10 @@ footModel = SimpleFootModel()
 numParameters = footModel.getNumParameters()
 
 
-scale = 10.
-populationSize = 500
+scale = 5.
+populationSize = 10
+
+
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
 initialStatesList = generateInitialStatesList()
 desiredMotionsList = generateTaskMotionsList()
@@ -47,6 +49,7 @@ costWeights = np.array([1.,1.,
                         300.,
                         100.])
 numSteps = 4
+
 optimizationParameters = SimpleGAParameters(crossoverRatio=0.7, 
                                             mutationChance=0.9, 
                                             mutationMagnitude=10,
@@ -62,8 +65,9 @@ optimizationEndConditions = OptimizationEndConditions(maxSteps=100000,
 
 endEarly = False
 
-simulationName = "GA3"
-readSimulationName = "GA3"
+simulationName = "test"
+readSimulationName = "test"
+
 
 def runOptimizer():    
     listener = keyboard.Listener(on_press=on_press)
@@ -107,7 +111,7 @@ def main():
     runOptimizer()
     plotParameterHistory()
     plotCostHistory()
-    # drawSimulationVisualizer()
+    drawSimulationVisualizer()
 
     
 

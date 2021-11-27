@@ -27,9 +27,9 @@ class GeneticAlgorithmOptimizer(Optimizer):
         nextPopulation = self.getNextPopulation(self.costsList, self.population)
         
         self.population = nextPopulation
-        self.costList = self.getCostOfPopulation(self.population)
+        self.costsList = self.getCostOfPopulation(self.population)
     
-        minCostIndex = self.costList.index(min(self.costList))
+        minCostIndex = self.costsList.index(min(self.costsList))
         
         value = self.population[minCostIndex, :]
 
