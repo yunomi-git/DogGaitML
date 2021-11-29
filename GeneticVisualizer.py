@@ -9,67 +9,29 @@ from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 import numpy as np
-from CostEvaluator import CostEvaluator
-
-class CostEvaluator2D(CostEvaluator):
-    def __init__(self):
-        pass
-    
-    def getCostMesh(self, xArr, yArr):
-        xLength = xArr.size
-        yLength = yArr.size
-        z = np.empty((xLength, yLength))
-        for ix in range(xLength):
-            for iy in range(yLength):
-                value = np.array([xArr[ix], yArr[iy]])
-                z[ix,iy] = self.getCost(value)
-        return z
-        # 
-        # x = x.reshape(xLength, 1)
-        # yLength = y.size
-        # y = y.reshape(1, yLength)    
-        # return self.getCost(x, y)
-    
-class ParaboloidCostEvaluator(CostEvaluator2D):
-    def __init__(self, a, b, c, d, e):
-        self.a = a;
-        self.b = b
-        self.c = c
-        self.d = d
-        self.e = e
-        
-    def getCost(self, value):
-        x = value[0]
-        y = value[1]
-        return (self.a * x * x + self.b * y * y + 
-                self.c * x + self.d * y +
-                self.e * x * y)
-    
-class SmithCostEvaluator(CostEvaluator2D):
-    def __init__(self, a, b):
-        self.a = a
-        self.b = b
-    
-    def getCost(self, value):
-        x = value[0]
-        y = value[1]
-        return self.a * (x * (np.cos(self.b * x * y + 1/y) + x) + y * y) + 1
-
-
 
     
 class GeneticVisualizer():
-    def __init__(self, costEvaluator, dataHistory):
+    def __init__(self, costEvaluator, dataHistory, convergenceHistory):
        self.setDefaultOptions()
        self.costEvaluator = costEvaluator
        self.historyDisplayIndex = 0
        self.setDataHistory(dataHistory)
+       
+       self.convergenceHistory = self.fixConvergenceHistory(convergenceHistory)
        
        # self.createEverything()
        
     def setDefaultOptions(self):
         self.setPlotRange(xMax = 15, yMax = 15)
         self.setResolution(200)
+        
+    def fixConvergenceHistory(self, convergenceHistory):
+        convergenceHistory = np.array(convergenceHistory)
+        minVal = np.min(convergenceHistory)
+        convergenceHistory -= minVal
+        convergenceHistory += 1
+        return convergenceHistory.tolist()
        
     #bug - this won't update if called after initialization.
     # consider letting user call createEverything manually
@@ -91,16 +53,25 @@ class GeneticVisualizer():
         self.wMain.setWindowTitle('2d cost function')
 
         self.w3d = gl.GLViewWidget()
-        self.w3d.setCameraPosition(distance=50)
+        self.w3d.setCameraPosition(distance=3 * self.avgGridSize)
         
         self.createCostSurface()
         self.createDataPlot()
         self.createGrid()
         self.createButtons()
+        self.createOptimaPlot()
         
+        self.createConvergencePlot()
         self.wMain.addWidget(self.w3d, row = 1, col = 0, colspan = 2)
+        
+        self.convPl.sizeHint = lambda: pg.QtCore.QSize(50, 100)
+        self.w3d.sizeHint = lambda: pg.QtCore.QSize(100, 100)
+        self.w3d.setSizePolicy(self.convPl.sizePolicy())
+        
         self.wMain.show()
-        self.wMain.resize(800,500)
+        self.wMain.resize(800,800)
+        
+        
         
     def createCostSurface(self):
         x, y, z = self.getMeshCost()
@@ -157,6 +128,8 @@ class GeneticVisualizer():
         data = self.dataHistory[self.historyDisplayIndex]
         self.dataPlot.setData(pos=data, color=(0,1,1,1), 
                               size=self.avgGridSize/30.0, pxMode=False)
+        
+        self.convergenceLine.setValue(self.historyDisplayIndex)
             
     def createDataPlot(self):
         initialData = self.dataHistory[0]
@@ -167,49 +140,71 @@ class GeneticVisualizer():
         self.w3d.addItem(self.dataPlot)
         self.w3d.addItem(self.prevDataPlot)
         
+    def createOptimaPlot(self):
+        data = self.costEvaluator.getKnownGlobalMinima()
+        if data is not None:
+            data = np.array(data)
+            minima = gl.GLScatterPlotItem(pos=data, color=(1,0,0,1), 
+                                          size=self.avgGridSize/30.0, pxMode=False)
+            self.w3d.addItem(minima)
+        
     def createGrid(self):
         g = gl.GLGridItem()
-        g.scale(2,2,1)
+        g.scale(2,2,2)
         g.setDepthValue(10)  # draw grid after surfaces since they may be translucent
         self.w3d.addItem(g)
-
-
-if __name__ == '__main__':
-    app = QtGui.QApplication([])
-    xMax = 15
-    yMax = 15
-    costEvaluator = SmithCostEvaluator(0.05, 10)
-    
-    
-    numData = 10
-    numHistory = 10
-    xData = (np.random.rand(numData, numHistory) - 0.5) * 2 * xMax
-    yData = (np.random.rand(numData, numHistory) - 0.5) * 2 * yMax
-    zData = np.empty((numData, numHistory))
-    for iData in range(numData):
-        for iHistory in range(numHistory):
-            x = xData[iData, iHistory]
-            y = yData[iData, iHistory]
-            value = np.array([x,y])
-            z = costEvaluator.getCost(value)
-            zData[iData, iHistory] = z
-    
-    dataHistory = []
-    for i in range(numHistory):
-        data = np.empty((numData, 3))
-        data[:,0] = xData[i,:]
-        data[:,1] = yData[i,:]
-        data[:,2] = zData[i,:]
-        dataHistory.append(data)
         
-    visualizer = GeneticVisualizer(costEvaluator=costEvaluator,
-                                   dataHistory=dataHistory)
-    visualizer.setPlotRange(xMax = 15, yMax = 15)
-    visualizer.setResolution(resolution=200)
-    visualizer.visualize()
-    import sys
-    if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-        QtGui.QApplication.instance().exec_()
+    def createConvergencePlot(self):
+        if self.convergenceHistory is not None:
+            self.convPl = pg.PlotWidget(name='Convergence')
+            self.convPl.setLabel('left', 'Cost')
+            self.convPl.setLabel('bottom', 'Iteration')
+            self.convPl.plot(self.convergenceHistory)
+            self.convPl.setLogMode(x=False, y=True)
+            
+            # a line for showing iteration
+            self.convergenceLine = pg.InfiniteLine(angle=90, movable=False, pos=0)
+            self.convPl.addItem(self.convergenceLine)
+            
+            self.wMain.addWidget(self.convPl, row = 2, col = 0, colspan = 2)
+
+
+# if __name__ == '__main__':
+    # app = QtGui.QApplication([])
+    # xMax = 15
+    # yMax = 15
+    # costEvaluator = SmithCostEvaluator(0.05, 10)
+    
+    
+    # numData = 10
+    # numHistory = 10
+    # xData = (np.random.rand(numData, numHistory) - 0.5) * 2 * xMax
+    # yData = (np.random.rand(numData, numHistory) - 0.5) * 2 * yMax
+    # zData = np.empty((numData, numHistory))
+    # for iData in range(numData):
+    #     for iHistory in range(numHistory):
+    #         x = xData[iData, iHistory]
+    #         y = yData[iData, iHistory]
+    #         value = np.array([x,y])
+    #         z = costEvaluator.getCost(value)
+    #         zData[iData, iHistory] = z
+    
+    # dataHistory = []
+    # for i in range(numHistory):
+    #     data = np.empty((numData, 3))
+    #     data[:,0] = xData[i,:]
+    #     data[:,1] = yData[i,:]
+    #     data[:,2] = zData[i,:]
+    #     dataHistory.append(data)
+        
+    # visualizer = GeneticVisualizer(costEvaluator=costEvaluator,
+    #                                dataHistory=dataHistory)
+    # visualizer.setPlotRange(xMax = 15, yMax = 15)
+    # visualizer.setResolution(resolution=200)
+    # visualizer.visualize()
+    # import sys
+    # if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
+    #     QtGui.QApplication.instance().exec_()
 
     
     

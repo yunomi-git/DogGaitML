@@ -21,9 +21,6 @@ class GeneticAlgorithmOptimizer(Optimizer):
         self.populationSize = np.ma.size(initialPopulation, 0)
         self.costsList = self.getCostOfPopulation(self.population)
         
-        
-        
-        
     def takeStepAndGetValue(self):
         nextPopulation = self.getNextPopulation(self.costsList, self.population)
         
@@ -62,6 +59,7 @@ class SimpleGAParameters:
     mutationMagnitudeLearningRate: float
     decreaseMutationChanceEveryNSteps: int
     mutationChanceLearningRate: float
+    mutateWithNormalDistribution: bool
     
 class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
     def __init__(self, initialPopulation, costEvaluator, simpleGAParameters):
@@ -80,9 +78,11 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
         return children
         
     def choose2Parents(self, population, costsList):
-        normedCosts = costsList/sum(costsList)
-        weights = 1.0/normedCosts
-        normedWeights = softmax(weights)
+        # normedCosts = costsList/sum(costsList)
+        # weights = 1.0/normedCosts
+        invertedCosts = -np.array(costsList)
+        normedWeights = softmax(invertedCosts)
+        # print(normedWeights)
         indices = np.random.choice(self.populationSize, size=2, replace=False, p=normedWeights)
         return population[indices[0],:], population[indices[1],:]
     
@@ -103,13 +103,17 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
     
     def generateMutations(self, child):
         mutationMask = np.random.rand(self.numFeatures) < self.simpleGAParameters.mutationChance
-        mutationValues = mutationMask * (np.random.standard_normal(self.numFeatures)) * self.simpleGAParameters.mutationMagnitude
+        if (self.simpleGAParameters.mutateWithNormalDistribution):
+            mutationValues = mutationMask * (np.random.standard_normal(self.numFeatures)) * self.simpleGAParameters.mutationMagnitude
+        else:
+            mutationValues = mutationMask * (2 * np.random.rand(self.numFeatures) - 1.0) * self.simpleGAParameters.mutationMagnitude
         child += mutationValues
         return child
     
     def postStepActions(self):
         if ((self.stepCount + 1) % self.simpleGAParameters.decreaseMutationMagnitudeEveryNSteps == 0):
             self.simpleGAParameters.mutationMagnitude *= self.simpleGAParameters.mutationMagnitudeLearningRate
+            
         if ((self.stepCount + 1) % self.simpleGAParameters.decreaseMutationChanceEveryNSteps == 0):
             self.simpleGAParameters.mutationChance *= self.simpleGAParameters.mutationChanceLearningRate
 
