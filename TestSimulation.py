@@ -28,11 +28,11 @@ class TestFootModel(FootModel):
         footDistances = dogModel.getPreMotionFootDistancesFromIdeal(desiredTaskMotion)
         
         # choose the foot with the largest distance
-        if (footDistances[feetThatCanMove[0]] > footDistances[feetThatCanMove[1]]):
+        if (footDistances[feetThatCanMove[0]] <= footDistances[feetThatCanMove[1]]):
             footToMove = feetThatCanMove[0]
         else:
             footToMove = feetThatCanMove[1]
-            
+                        
         footScalingDistance = self.parameters[0]
         comScalingDistance = self.parameters[1]
         
@@ -61,7 +61,7 @@ def testSingleSimulation():
     desiredTaskMotion = TaskMotion(20.0, 0.0, 0.0)
     numSteps = 10
     dogModel = DogModel()
-    initialCOM = np.array([-20.0, 0])
+    initialCOM = np.array([-20.0, 5])
     initialFootState = dogModel.defaultFootState - initialCOM
     initialState = State(initialFootState, 0.)
     simulation = Simulation(initialState, footModel, desiredTaskMotion, numSteps, costWeights)

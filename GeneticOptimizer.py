@@ -9,6 +9,7 @@ import numpy as np;
 from Optimizer import Optimizer
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from scipy.special import softmax
 import random
 
 
@@ -81,7 +82,7 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
     def choose2Parents(self, population, costsList):
         normedCosts = costsList/sum(costsList)
         weights = 1.0/normedCosts
-        normedWeights = weights/sum(weights)
+        normedWeights = softmax(weights)
         indices = np.random.choice(self.populationSize, size=2, replace=False, p=normedWeights)
         return population[indices[0],:], population[indices[1],:]
     
