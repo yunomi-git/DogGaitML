@@ -19,13 +19,13 @@ class GeneticAlgorithmOptimizer(Optimizer):
         super().__init__(initialValue, costEvaluator);
         self.population = initialPopulation
         self.populationSize = np.ma.size(initialPopulation, 0)
-        self.costsList = self.getCostOfPopulation(self.population)
+        self.costsList = self.getCostListOfPopulation(self.population)
         
     def takeStepAndGetValue(self):
         nextPopulation = self.getNextPopulation(self.costsList, self.population)
         
         self.population = nextPopulation
-        self.costsList = self.getCostOfPopulation(self.population)
+        self.costsList = self.getCostListOfPopulation(self.population)
     
         minCostIndex = self.costsList.index(min(self.costsList))
         
@@ -43,12 +43,37 @@ class GeneticAlgorithmOptimizer(Optimizer):
     def getNextPopulation(self, costsList, population):
         pass
     
-    def getCostOfPopulation(self, population):
+    def getCostListOfPopulation(self, population):
         costsList = []
         for i in range(0, self.populationSize):
             cost = self.costEvaluator.getCost(population[i,:])
             costsList.append(cost)
         return costsList
+    
+    def getVarianceOfPopulation(population):
+        covMat = np.cov(population)
+        det = np.linalg.det(covMat)
+        return det
+    
+    def getDiversityListOfPopulation(population):
+        populationSize, numDim = population.shape
+        data = population.reshape((populationSize,1,numDim))
+        comparator = population.reshape((1,populationSize,numDim))
+        
+        axisData = 0
+        axisComparator = 1
+        axisDim = 2
+        
+        dataTens = np.repeat(data, populationSize, axisComparator)
+        compTens = np.repeat(comparator, populationSize, axisData)
+        errorTens = dataTens - compTens # shape (data, comparator, dim)
+        
+        errorNormMat = np.linalg.norm(errorTens, axis=axisDim) #norm squishes along dimension axis
+        errorAvgList = np.sum(errorNormMat, axis=axisData) / (populationSize - 1) # combines along data axis
+        return errorAvgList
+        
+        
+        
         
 @dataclass
 class SimpleGAParameters:
@@ -78,8 +103,6 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
         return children
         
     def choose2Parents(self, population, costsList):
-        # normedCosts = costsList/sum(costsList)
-        # weights = 1.0/normedCosts
         invertedCosts = -np.array(costsList)
         normedWeights = softmax(invertedCosts)
         # print(normedWeights)
