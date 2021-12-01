@@ -21,15 +21,16 @@ class GeneticAlgorithmOptimizer(Optimizer):
         self.populationSize = np.ma.size(initialPopulation, 0)
         self.costsList = self.getCostListOfPopulation(self.population)
         
-    def takeStepAndGetValue(self):
+    def takeStepAndGetValueAndCost(self):
         self.population = self.getNextPopulation(self.population, self.costsList)
         self.costsList = self.getCostListOfPopulation(self.population)
     
-        minCostIndex = self.costsList.index(min(self.costsList))
+        minCost = min(self.costsList)
+        minCostIndex = self.costsList.index(minCost)
         value = self.population[minCostIndex, :]
 
         self.postStepActions()
-        return value
+        return value, minCost
     
     @abstractmethod
     def postStepActions(self):
@@ -57,6 +58,7 @@ class SimpleGAParameters:
     decreaseMutationChanceEveryNSteps: int
     mutationChanceLearningRate: float
     mutateWithNormalDistribution: bool
+    mutationLargeCostScalingFactor: float
     
     
 class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
@@ -71,9 +73,15 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
         weightedChoiceList = self.getWeightedChoiceList(population, costsList)
         for i in range(self.populationSize - 1):
             parents, costs = self.choose2Parents(population, costsList, weightedChoiceList)
-            parent1 = parents[0]
-            parent2 = parents[1]
-            child = self.getChildFromParents(parent1, parent2)
+            avgParentCost = np.mean(costs)
+            minCost = 0.0
+
+            child = self.getChildFromParents(parents)
+            mutationScale = self.GAParameters.mutationMagnitude
+            mutationScale += (self.GAParameters.mutationLargeCostScalingFactor
+                              * (avgParentCost - minCost))
+            child = self.generateMutations(child, mutationScale)
+            
             children = np.append(children, np.array([child]), axis=0)
         
         return children
@@ -95,13 +103,13 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
     
     
     
-    def getChildFromParents(self, parent1, parent2):
+    def getChildFromParents(self, parents):
+        parent1 = parents[0]
+        parent2 = parents[1]
         if (random.random() < self.GAParameters.crossoverRatio):
             child = self.generateCrossover(parent1, parent2);
         else:
             child = parent1
-        
-        child = self.generateMutations(child)
         return child
     
     def generateCrossover(self, parent1, parent2):
@@ -110,12 +118,12 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
         child = parent1 * crossoverMask + parent2 * flippedCrossover
         return child
     
-    def generateMutations(self, child):
+    def generateMutations(self, child, mutationScale):
         mutationMask = np.random.rand(self.numFeatures) < self.GAParameters.mutationChance
         if (self.GAParameters.mutateWithNormalDistribution):
-            mutationValues = mutationMask * (np.random.standard_normal(self.numFeatures)) * self.GAParameters.mutationMagnitude
+            mutationValues = mutationMask * (np.random.standard_normal(self.numFeatures)) * mutationScale
         else:
-            mutationValues = mutationMask * (2 * np.random.rand(self.numFeatures) - 1.0) * self.GAParameters.mutationMagnitude
+            mutationValues = mutationMask * (2 * np.random.rand(self.numFeatures) - 1.0) * mutationScale
         child += mutationValues
         return child
     

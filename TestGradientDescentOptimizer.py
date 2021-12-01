@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import matplotlib.pyplot as mpl;
 from CostEvaluator import CostEvaluator
 from mpl_toolkits.mplot3d import Axes3D
-from Optimizer import GradientDescentOptimizer, OptimizationParameters
+from Optimizer import GradientDescentOptimizer, OptimizationParameters, OptimizationEndConditions
 
 class ParabolicCostEvaluator(CostEvaluator):
     def __init__(self, a, b):
@@ -37,28 +37,28 @@ def optimizeParabola() :
     initialValue = np.array([5.0]);
     costEvaluator = ParabolicCostEvaluator(1.0, 0);
     optimizer = GradientDescentOptimizer(initialValue, costEvaluator, optimizationParameters);
-    optimizer.optimizeUntilMaxCount(100, 0.0);
-    history = optimizer.getFullHistory();
+    endConditions = OptimizationEndConditions(maxSteps=1000, 
+                                             convergenceThreshold=0.0)
+    optimizer.optimizeUntilEndCondition(endConditions)
+    valueHistory, costHistory = optimizer.getFullHistory();
     
-    count = len(history);
-    xval = [];
-    yval = [];
-    for i in range(count):
-        x = history[i][0];
-        xval.append(x[0])
-        yval.append(history[i][1])
+    count = len(costHistory);
+    xval = valueHistory[:,0];
+    yval = costHistory
     
     mpl.plot(xval, yval);
     print(xval[-1])
     
-def optimizeParabaloid():
+def optimizeParaboloid():
     a = 1.0
     b = 1.0
     optimizationParameters = OptimizationParameters(0.1, 0.001, 0.95, 10);
     initialValue = np.array([5.0, 5.0]);
     costEvaluator = ParaboloidCostEvaluator(a, b);
     optimizer = GradientDescentOptimizer(initialValue, costEvaluator, optimizationParameters);
-    optimizer.optimizeUntilMaxCount(1000, 0.0);
+    endConditions = OptimizationEndConditions(maxSteps=1000, 
+                                             convergenceThreshold=0.0)
+    optimizer.optimizeUntilEndCondition(endConditions)
     valueHistory, costHistory = optimizer.getFullHistory();
     
     count = len(costHistory);
@@ -82,7 +82,7 @@ def plotParaboloic(ax, a, b):
     ax.plot_surface(x, y, z, alpha=0.4);
     
 def main():
-    optimizeParabaloid()
+    optimizeParabola()
     
     
 if __name__ == "__main__":

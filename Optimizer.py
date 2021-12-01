@@ -28,14 +28,15 @@ class Optimizer(ABC):
         self.endNow = False
     
     @abstractmethod
-    def takeStepAndGetValue(self):
+    def takeStepAndGetValueAndCost(self):
         pass
     
     def step(self):
-        self.value = self.takeStepAndGetValue()
+        value, cost = self.takeStepAndGetValueAndCost()
+        self.value = value
         
         self.valueHistory = np.append(self.valueHistory, [self.value], axis=0)
-        self.costHistory = np.append(self.costHistory, self.costEvaluator.getCost(self.value))
+        self.costHistory = np.append(self.costHistory, cost)
         self.stepCount += 1;
         
     def getCurrentStateAndCost(self):
@@ -107,14 +108,15 @@ class GradientDescentOptimizer(Optimizer):
         valueGradient /= gradientNorm;
         return valueGradient;
     
-    def takeStepAndGetValue(self):
+    def takeStepAndGetValueAndCost(self):
         if ((self.stepCount + 1) % self.scaleEveryNSteps == 0):
             self.optimizationStepSize *= self.optimizationStepSizeScaling
             
         valueGradientDirection = self.findValueGradient()
         valueStepVector = self.optimizationStepSize * valueGradientDirection;
         value = self.value + valueStepVector
-        return value
+        cost = self.costEvaluator.getCost(value)
+        return value, cost
 
        
     

@@ -94,7 +94,7 @@ class AckleyCostEvaluator(CostEvaluator2D):
         return (32.768, 32.768)
     
     def getKnownGlobalMinima(self):
-        return [0, np.array([0, 0])]
+        return [np.array([0, 0, 0])]
     
     def getCost(self, value):
         x = value[0]
