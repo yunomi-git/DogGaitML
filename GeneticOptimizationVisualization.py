@@ -61,9 +61,9 @@ app = QtGui.QApplication([])
 
 # costEvaluator = ParaboloidCostEvaluator(a=0.01, b=0.01, c=0, d=0, e=0);
 # costEvaluator = SmithCostEvaluator(0.05, 10)
-# costEvaluator = SixHumpCamelCostEvaluator()
+costEvaluator = SixHumpCamelCostEvaluator()
 # costEvaluator = AckleyCostEvaluator()
-costEvaluator = EggHolderCostEvaluator()
+# costEvaluator = EggHolderCostEvaluator()
 xMax, yMax = costEvaluator.getDefaultRange()
 dataHistory, convergenceHistory = createPopulationHistory(costEvaluator)
     

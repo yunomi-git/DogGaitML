@@ -22,16 +22,12 @@ class GeneticAlgorithmOptimizer(Optimizer):
         self.costsList = self.getCostListOfPopulation(self.population)
         
     def takeStepAndGetValue(self):
-        nextPopulation = self.getNextPopulation(self.population)
-        
-        self.population = nextPopulation
+        self.population = self.getNextPopulation(self.population, self.costsList)
         self.costsList = self.getCostListOfPopulation(self.population)
     
         minCostIndex = self.costsList.index(min(self.costsList))
-        
         value = self.population[minCostIndex, :]
 
-        
         self.postStepActions()
         return value
     
@@ -50,30 +46,6 @@ class GeneticAlgorithmOptimizer(Optimizer):
             costsList.append(cost)
         return costsList
     
-    def getVarianceOfPopulation(population):
-        covMat = np.cov(population)
-        det = np.linalg.det(covMat)
-        return det
-    
-    def getDiversityListOfPopulation(population):
-        populationSize, numDim = population.shape
-        data = population.reshape((populationSize,1,numDim))
-        comparator = population.reshape((1,populationSize,numDim))
-        
-        axisData = 0
-        axisComparator = 1
-        axisDim = 2
-        
-        dataTens = np.repeat(data, populationSize, axisComparator)
-        compTens = np.repeat(comparator, populationSize, axisData)
-        errorTens = dataTens - compTens # shape (data, comparator, dim)
-        
-        errorNormMat = np.linalg.norm(errorTens, axis=axisDim) #norm squishes along dimension axis
-        errorAvgList = np.sum(errorNormMat, axis=axisData) / (populationSize - 1) # combines along data axis
-        return errorAvgList
-        
-        
-        
         
 @dataclass
 class SimpleGAParameters:
@@ -86,34 +58,40 @@ class SimpleGAParameters:
     mutationChanceLearningRate: float
     mutateWithNormalDistribution: bool
     
+    
 class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
     def __init__(self, initialPopulation, costEvaluator, GAParameters):
         super().__init__(initialPopulation, costEvaluator);
         self.GAParameters = GAParameters
         
-    def getNextPopulation(self, population):   
-        eliteParent = self.value
+    def getNextPopulation(self, population, costsList):   
+        eliteParent = self.value # smallest cost is always saved
         children = np.array([eliteParent])
         
-        weightedChoiceList = self.getWeightedChoiceList(population)
+        weightedChoiceList = self.getWeightedChoiceList(population, costsList)
         for i in range(self.populationSize - 1):
-            parent1, parent2 = self.choose2Parents(population, weightedChoiceList)
+            parents, costs = self.choose2Parents(population, costsList, weightedChoiceList)
+            parent1 = parents[0]
+            parent2 = parents[1]
             child = self.getChildFromParents(parent1, parent2)
             children = np.append(children, np.array([child]), axis=0)
         
         return children
     
-    def getWeightedChoiceList(self, population):
-        invertedCosts = -np.array(self.costsList)
+    def getWeightedChoiceList(self, population, costsList):
+        invertedCosts = -np.array(costsList)
         normedWeights = softmax(invertedCosts)
         return normedWeights
         
-    def choose2Parents(self, population, weightedChoiceList):
+    def choose2Parents(self, population, costsList, weightedChoiceList):
         indices = np.random.choice(self.populationSize, 
                                    size=2, 
                                    replace=False, 
                                    p=weightedChoiceList)
-        return population[indices[0],:], population[indices[1],:]
+        
+        parents = [population[indices[0],:], population[indices[1],:]]
+        costs = [costsList[indices[0]], costsList[indices[1]]]
+        return parents, costs
     
     
     
