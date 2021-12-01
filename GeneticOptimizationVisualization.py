@@ -59,8 +59,6 @@ def appendOptimizationDataToHistory(optimizer, dataHistory):
 # ## Create a GL View widget to display data
 app = QtGui.QApplication([])
 
-# xMax = 1
-# yMax = 1
 # costEvaluator = ParaboloidCostEvaluator(a=0.01, b=0.01, c=0, d=0, e=0);
 # costEvaluator = SmithCostEvaluator(0.05, 10)
 # costEvaluator = SixHumpCamelCostEvaluator()
