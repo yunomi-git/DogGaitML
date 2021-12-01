@@ -24,14 +24,15 @@ def createPopulationHistory(costEvaluator):
     dataHistory = []
         
     optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
-                                                mutationChance=0.95, 
                                                 mutationMagnitude=3.0,
                                                 decreaseMutationMagnitudeEveryNSteps=10,
-                                                mutationMagnitudeLearningRate=0.7,
+                                                mutationMagnitudeLearningRate=0.95,
+                                                mutationChance=0.95,
                                                 decreaseMutationChanceEveryNSteps=10,
                                                 mutationChanceLearningRate=0.9,
-                                                mutateWithNormalDistribution=True,
-                                                mutationLargeCostScalingFactor=0.0);
+                                                mutateWithNormalDistribution=False,
+                                                mutationLargeCostScalingFactor=10.0,
+                                                diversityChoiceRatio = 0.7);
     initialValue = (np.random.rand(numData, 2)-0.5) * (xMax + yMax);
     optimizer = SimpleGAOptimizer(initialValue, costEvaluator, optimizationParameters);
     endConditions = OptimizationEndConditions(maxSteps=numHistory, 
@@ -63,8 +64,8 @@ app = QtGui.QApplication([])
 # costEvaluator = ParaboloidCostEvaluator(a=0.01, b=0.01, c=0, d=0, e=0);
 # costEvaluator = SmithCostEvaluator(0.05, 10)
 # costEvaluator = SixHumpCamelCostEvaluator()
-costEvaluator = AckleyCostEvaluator()
-# costEvaluator = EggHolderCostEvaluator()
+# costEvaluator = AckleyCostEvaluator()
+costEvaluator = EggHolderCostEvaluator()
 xMax, yMax = costEvaluator.getDefaultRange()
 dataHistory, convergenceHistory = createPopulationHistory(costEvaluator)
     

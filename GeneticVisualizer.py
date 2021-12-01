@@ -9,8 +9,46 @@ from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 import numpy as np
+from PyQt5.QtWidgets import QSlider
 
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QHBoxLayout, QLabel, QSizePolicy, QSlider, QSpacerItem, \
+    QVBoxLayout, QWidget
     
+class Slider(QWidget):
+    def __init__(self, minimum, maximum, parent=None):
+        super(Slider, self).__init__(parent=parent)
+        
+        self.verticalLayout = QVBoxLayout(self)
+        self.horizontalLayout = QHBoxLayout()
+        self.label = QLabel(self)
+        self.horizontalLayout.addWidget(self.label)
+        
+        # spacerItem = QSpacerItem(0, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        # self.horizontalLayout.addItem(spacerItem)
+        
+        self.slider = QSlider(self)
+        self.slider.setOrientation(Qt.Horizontal)
+        self.slider.setTickInterval(1.0)
+        self.horizontalLayout.addWidget(self.slider)
+        spacerItem1 = QSpacerItem(0, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalLayout.addItem(spacerItem1)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.resize(self.sizeHint())
+
+        self.minimum = minimum
+        self.maximum = maximum
+        self.slider.valueChanged.connect(self.setLabelValue)
+        self.x = None
+        self.setLabelValue(self.slider.value())
+
+    def setLabelValue(self, value):
+        self.x = self.minimum + (float(value) / (self.slider.maximum() - self.slider.minimum())) * (
+        self.maximum - self.minimum)
+        self.x = int(self.x)
+        self.label.setText("{0:.4g}".format(self.x))
+
+
 class GeneticVisualizer():
     def __init__(self, costEvaluator, dataHistory, convergenceHistory):
        self.setDefaultOptions()
@@ -33,8 +71,6 @@ class GeneticVisualizer():
         convergenceHistory += 1
         return convergenceHistory.tolist()
        
-    #bug - this won't update if called after initialization.
-    # consider letting user call createEverything manually
     def setPlotRange(self, xMax, yMax):
         self.xMax = xMax
         self.yMax = yMax
@@ -62,16 +98,21 @@ class GeneticVisualizer():
         self.createOptimaPlot()
         
         self.createConvergencePlot()
-        self.wMain.addWidget(self.w3d, row = 1, col = 0, colspan = 2)
         
         self.convPl.sizeHint = lambda: pg.QtCore.QSize(50, 100)
         self.w3d.sizeHint = lambda: pg.QtCore.QSize(100, 100)
         self.w3d.setSizePolicy(self.convPl.sizePolicy())
         
+        self.createSlider()
+        
+        self.wMain.addWidget(self.prevBtn, row=0, col=0)
+        self.wMain.addWidget(self.nextBtn, row=0, col=1)
+        self.wMain.addWidget(self.convPl, row = 3, col = 0, colspan = 2)
+        self.wMain.addWidget(self.w3d, row = 2, col = 0, colspan = 2)
+        self.wMain.addWidget(self.slider, row = 1, col = 0, colspan = 2)
+        
         self.wMain.show()
         self.wMain.resize(800,800)
-        
-        
         
     def createCostSurface(self):
         x, y, z = self.getMeshCost()
@@ -105,20 +146,32 @@ class GeneticVisualizer():
         self.nextBtn.clicked.connect(self.nextButton)
         self.prevBtn.clicked.connect(self.prevButton)
         
-        self.wMain.addWidget(self.prevBtn, row=0, col=0)
-        self.wMain.addWidget(self.nextBtn, row=0, col=1)
+
     
     def nextButton(self):
         self.incrementHistory(1)
     def prevButton(self):
         self.incrementHistory(-1)
         
+    def createSlider(self):
+        self.slider = Slider(0, self.numHistory - 1)
+        self.slider.slider.valueChanged.connect(self.sliderUpdate)
+        
+    def sliderUpdate(self):
+        idx = self.slider.x
+        
+        self.setHistoryIndex(idx)
+        
     def incrementHistory(self, i):        
-        self.historyDisplayIndex += i
-        if self.historyDisplayIndex > (self.numHistory - 1):
-            self.historyDisplayIndex = self.numHistory - 1
-        if self.historyDisplayIndex < 0:
-            self.historyDisplayIndex = 0
+        historyDisplayIndex = self.historyDisplayIndex + i
+        if historyDisplayIndex > (self.numHistory - 1):
+            historyDisplayIndex = self.numHistory - 1
+        if historyDisplayIndex < 0:
+            historyDisplayIndex = 0
+        self.setHistoryIndex(historyDisplayIndex)
+        
+    def setHistoryIndex(self, idx):
+        self.historyDisplayIndex = idx
         prevhistoryDisplayIndex = self.historyDisplayIndex - 1
         if prevhistoryDisplayIndex < 0:
             prevhistoryDisplayIndex = 0
@@ -166,7 +219,6 @@ class GeneticVisualizer():
             self.convergenceLine = pg.InfiniteLine(angle=90, movable=False, pos=0)
             self.convPl.addItem(self.convergenceLine)
             
-            self.wMain.addWidget(self.convPl, row = 2, col = 0, colspan = 2)
 
 
 # if __name__ == '__main__':

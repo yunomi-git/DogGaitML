@@ -59,6 +59,7 @@ class SimpleGAParameters:
     mutationChanceLearningRate: float
     mutateWithNormalDistribution: bool
     mutationLargeCostScalingFactor: float
+    diversityChoiceRatio: float
     
     
 class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
@@ -67,19 +68,21 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
         self.GAParameters = GAParameters
         
     def getNextPopulation(self, population, costsList):   
-        eliteParent = self.value # smallest cost is always saved
-        children = np.array([eliteParent])
+        minCost = min(costsList)
+        minCostIndex = self.costsList.index(minCost)
+        eliteParent = self.population[minCostIndex, :]
+        
+        children = np.array([eliteParent]) #parent with min costs always saved
         
         weightedChoiceList = self.getWeightedChoiceList(population, costsList)
         for i in range(self.populationSize - 1):
             parents, costs = self.choose2Parents(population, costsList, weightedChoiceList)
             avgParentCost = np.mean(costs)
-            minCost = 0.0
 
             child = self.getChildFromParents(parents)
             mutationScale = self.GAParameters.mutationMagnitude
             mutationScale += (self.GAParameters.mutationLargeCostScalingFactor
-                              * (avgParentCost - minCost))
+                              * np.log((avgParentCost - minCost) + 1))
             child = self.generateMutations(child, mutationScale)
             
             children = np.append(children, np.array([child]), axis=0)
@@ -87,9 +90,41 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
         return children
     
     def getWeightedChoiceList(self, population, costsList):
-        invertedCosts = -np.array(costsList)
-        normedWeights = softmax(invertedCosts)
-        return normedWeights
+        # lower cost = higher chance
+        invertedCosts = -np.array(costsList) 
+        # should account for negative costs, but not empirically supported
+        normedCostWeights = softmax(invertedCosts) 
+        
+        diversityList = SimpleGAOptimizer.getDiversityListOfPopulation(population)
+        normedDiversity = diversityList / np.sum(diversityList)
+        
+        weights = (normedCostWeights * (1.0-self.GAParameters.diversityChoiceRatio)
+                   + normedDiversity * self.GAParameters.diversityChoiceRatio) 
+        
+        return weights
+    
+    def getVarianceOfPopulation(population):
+        covMat = np.cov(population)
+        det = np.linalg.det(covMat)
+        return det
+    
+    def getDiversityListOfPopulation(population):
+        populationSize, numDim = population.shape
+        data = population.reshape((populationSize,1,numDim))
+        comparator = population.reshape((1,populationSize,numDim))
+        
+        axisData = 0
+        axisComparator = 1
+        axisDim = 2
+        
+        dataTens = np.repeat(data, populationSize, axisComparator)
+        compTens = np.repeat(comparator, populationSize, axisData)
+        errorTens = dataTens - compTens # shape (data, comparator, dim)
+        
+        errorNormMat = np.linalg.norm(errorTens, axis=axisDim) #norm squishes along dimension axis
+        errorAvgList = np.sum(errorNormMat, axis=axisData) / (populationSize - 1) # combines along data axis
+        return errorAvgList
+
         
     def choose2Parents(self, population, costsList, weightedChoiceList):
         indices = np.random.choice(self.populationSize, 
