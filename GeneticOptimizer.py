@@ -60,7 +60,7 @@ class SimpleGAParameters:
     mutateWithNormalDistribution: bool
     mutationLargeCostScalingFactor: float
     diversityChoiceRatio: float
-    # varianceMutationMaxMagnitude: float
+    varianceMutationMaxMagnitude: float
     
     
     
@@ -85,6 +85,8 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
             mutationScale = self.GAParameters.mutationMagnitude
             mutationScale += (self.GAParameters.mutationLargeCostScalingFactor
                               * np.log((avgParentCost - minCost) + 1))
+            variance = SimpleGAOptimizer.getVarianceOfPopulation(population)
+            mutationScale += 1./(variance + 1./self.GAParameters.varianceMutationMaxMagnitude)
             child = self.generateMutations(child, mutationScale)
             
             children = np.append(children, np.array([child]), axis=0)

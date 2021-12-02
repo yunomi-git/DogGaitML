@@ -32,7 +32,8 @@ def createPopulationHistory(costEvaluator):
                                                 mutationChanceLearningRate=0.9,
                                                 mutateWithNormalDistribution=False,
                                                 mutationLargeCostScalingFactor=10.0,
-                                                diversityChoiceRatio = 0.7);
+                                                diversityChoiceRatio = 0.7,
+                                                varianceMutationMaxMagnitude = 0.1);
     initialValue = (np.random.rand(numData, 2)-0.5) * (xMax + yMax);
     optimizer = SimpleGAOptimizer(initialValue, costEvaluator, optimizationParameters);
     endConditions = OptimizationEndConditions(maxSteps=numHistory, 
