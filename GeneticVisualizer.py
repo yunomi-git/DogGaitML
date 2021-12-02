@@ -66,9 +66,10 @@ class GeneticVisualizer():
         
     def fixConvergenceHistory(self, convergenceHistory):
         convergenceHistory = np.array(convergenceHistory)
-        minVal = np.min(convergenceHistory)
+        minima = self.costEvaluator.getKnownGlobalMinima()
+        minVal = minima[0][2]
         convergenceHistory -= minVal
-        convergenceHistory += 1
+        convergenceHistory = np.sign(convergenceHistory) * np.log(np.abs(convergenceHistory)/10. + 1)
         return convergenceHistory.tolist()
        
     def setPlotRange(self, xMax, yMax):
@@ -104,15 +105,24 @@ class GeneticVisualizer():
         self.w3d.setSizePolicy(self.convPl.sizePolicy())
         
         self.createSlider()
+        self.createCostLabel()
         
         self.wMain.addWidget(self.prevBtn, row=0, col=0)
         self.wMain.addWidget(self.nextBtn, row=0, col=1)
         self.wMain.addWidget(self.convPl, row = 3, col = 0, colspan = 2)
         self.wMain.addWidget(self.w3d, row = 2, col = 0, colspan = 2)
         self.wMain.addWidget(self.slider, row = 1, col = 0, colspan = 2)
+        self.wMain.addWidget(self.cost, row = 4, col = 0)
+        self.wMain.addWidget(self.ideal, row = 4, col = 1)
         
         self.wMain.show()
         self.wMain.resize(800,800)
+        
+    def createCostLabel(self):
+        self.cost = QLabel()
+        self.ideal = QLabel()
+        minima = self.costEvaluator.getKnownGlobalMinima()
+        self.ideal.setText("Ideal: " + "{0:.5g}".format(minima[0][2]))
         
     def createCostSurface(self):
         x, y, z = self.getMeshCost()
@@ -183,6 +193,8 @@ class GeneticVisualizer():
                               size=self.avgGridSize/30.0, pxMode=False)
         
         self.convergenceLine.setValue(self.historyDisplayIndex)
+        dataz = data[:,2]
+        self.cost.setText("Cost: " + "{0:.5g}".format(min(dataz)))
             
     def createDataPlot(self):
         initialData = self.dataHistory[0]
@@ -210,14 +222,17 @@ class GeneticVisualizer():
     def createConvergencePlot(self):
         if self.convergenceHistory is not None:
             self.convPl = pg.PlotWidget(name='Convergence')
-            self.convPl.setLabel('left', 'Cost')
+            self.convPl.setLabel('left', 'Cost (Log)')
             self.convPl.setLabel('bottom', 'Iteration')
             self.convPl.plot(self.convergenceHistory)
-            self.convPl.setLogMode(x=False, y=True)
+            # self.convPl.setLogMode(x=False, y=True)
             
             # a line for showing iteration
             self.convergenceLine = pg.InfiniteLine(angle=90, movable=False, pos=0)
             self.convPl.addItem(self.convergenceLine)
+            
+            grid = pg.GridItem()
+            self.convPl.addItem(grid)
             
 
 

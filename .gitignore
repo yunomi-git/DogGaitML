@@ -1,3 +1,4 @@
 *.dat
+*.gif
 *.pyc
 /__pycache__/*

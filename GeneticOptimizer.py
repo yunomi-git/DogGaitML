@@ -60,6 +60,8 @@ class SimpleGAParameters:
     mutateWithNormalDistribution: bool
     mutationLargeCostScalingFactor: float
     diversityChoiceRatio: float
+    # varianceMutationMaxMagnitude: float
+    
     
     
 class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
@@ -92,8 +94,14 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
     def getWeightedChoiceList(self, population, costsList):
         # lower cost = higher chance
         invertedCosts = -np.array(costsList) 
+        
         # should account for negative costs, but not empirically supported
-        normedCostWeights = softmax(invertedCosts) 
+        # normedCostWeights = softmax(invertedCosts) 
+        
+        # shift to positive and normalize
+        invertedCosts -= min(invertedCosts)
+        invertedCosts = np.power(invertedCosts, 2)
+        normedCostWeights = invertedCosts / sum(invertedCosts)
         
         diversityList = SimpleGAOptimizer.getDiversityListOfPopulation(population)
         normedDiversity = diversityList / np.sum(diversityList)
