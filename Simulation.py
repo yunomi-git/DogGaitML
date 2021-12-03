@@ -29,6 +29,30 @@ class BatchSimulation(CostEvaluator):
                 
         return totalCost
     
+class StochasticBatchSimulation(CostEvaluator):
+    def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights): 
+        self.footModel = footModel
+        self.initialStatesList = initialStatesList
+        self.desiredMotionsList = desiredMotionsList
+        self.numSteps = numSteps
+        self.costWeights = costWeights
+        
+        self.numInitialStates = len(initialStatesList)
+        self.numDesiredMotions = len(desiredMotionsList)
+        self.idxInitStates = 0
+        self.idxDesiredMotions = 0
+                
+    def getCost(self, parameters):
+        initialState = self.initialStatesList[self.idxInitStates]
+        desiredMotion = self.desiredMotionsList[self.idxDesiredMotions]
+        simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
+        cost = simulation.getCost(parameters)
+        
+        self.idxInitStates = (self.idxInitStates + 1) % self.numInitialStates
+        self.idxDesiredMotions = (self.idxDesiredMotions + 1) % self.numDesiredMotions
+                
+        return cost
+    
 class Simulation(CostEvaluator):
     def __init__(self, initialState, footModel, desiredTaskMotion, numSteps, costWeights):
         self.simulationHistory = [];
@@ -39,9 +63,10 @@ class Simulation(CostEvaluator):
         
         self.footModel = footModel
         self.numSteps = numSteps
-        self.costWeights = np.array([costWeights[0], costWeights[1],
+        self.initialCostWeights = np.array([costWeights[0], costWeights[1],
                                      costWeights[2], costWeights[3],
                                      costWeights[4]])
+        self.costWeights = np.copy(self.initialCostWeights)
         self.failureWeights = np.array([costWeights[5], costWeights[5], costWeights[5], costWeights[5]])
         self.failedWeights = costWeights[6]
         
@@ -69,17 +94,11 @@ class Simulation(CostEvaluator):
             currentCOMInWorldFrame = self.currentCOMInWorldFrame + desiredCommand.comTranslation
             
             if not dynamics.hasFailed():
-                # self.currentState = dynamics.getCurrentState()
-                # self.currentCOMInWorldFrame = self.currentCOMInWorldFrame + desiredCommand.comTranslation
                 self.currentState = currentState
                 self.currentCOMInWorldFrame = currentCOMInWorldFrame
             else:
                 self.terminate()
-            # self.currentState = dynamics.getCurrentState()
-            # self.currentCOMInWorldFrame = self.currentCOMInWorldFrame + desiredCommand.comTranslation
-            # if dynamics.hasFailed():
-            #     self.terminate()
-                
+
             self.currentRunningCost += self.computeCostFromMotion(desiredTaskMotion=self.desiredTaskMotion, 
                                                               command=desiredCommand, 
                                                               originalState=originalState, 

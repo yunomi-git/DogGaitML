@@ -44,8 +44,6 @@ class SimpleFootModel(FootModel):
         footState = state.footState
         self.dogModel.setState(state)
         feetThatCanMove = self.dogModel.getFeetThatCanMove();
-        print("---")
-        print(feetThatCanMove)
         
         outputList = [];
         for foot in feetThatCanMove:
@@ -56,7 +54,6 @@ class SimpleFootModel(FootModel):
         i = self.getBestOutputIndexFromList(outputList);
         bestOutput = outputList[i];
         bestFoot = feetThatCanMove[i];
-        print(bestFoot)
         
         # construct desired motion from output
         desiredCommand = Command(bestFoot, 

@@ -68,6 +68,8 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
     def __init__(self, initialPopulation, costEvaluator, GAParameters):
         super().__init__(initialPopulation, costEvaluator);
         self.GAParameters = GAParameters
+        if self.GAParameters.varianceMutationMaxMagnitude <= 0.:
+            self.GAParameters.varianceMutationMaxMagnitude = 0.000001
         
     def getNextPopulation(self, population, costsList):   
         minCost = min(costsList)
@@ -82,16 +84,29 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
             avgParentCost = np.mean(costs)
 
             child = self.getChildFromParents(parents)
-            mutationScale = self.GAParameters.mutationMagnitude
-            mutationScale += (self.GAParameters.mutationLargeCostScalingFactor
-                              * np.log((avgParentCost - minCost) + 1))
-            variance = SimpleGAOptimizer.getVarianceOfPopulation(population)
-            mutationScale += 1./(variance + 1./self.GAParameters.varianceMutationMaxMagnitude)
+            # mutationScale = self.GAParameters.mutationMagnitude
+            # mutationScale += (self.GAParameters.mutationLargeCostScalingFactor
+            #                   * np.log((avgParentCost - minCost) + 1))
+            # variance = SimpleGAOptimizer.getVarianceOfPopulation(population)
+            # mutationScale += 1./(variance + 1./self.GAParameters.varianceMutationMaxMagnitude)
+            mutationScale = self.getMutationScaling(population, costsList, avgParentCost)
             child = self.generateMutations(child, mutationScale)
             
             children = np.append(children, np.array([child]), axis=0)
         
         return children
+    
+    def getMutationScaling(self, population, costsList, avgParentCost):
+        minCost = min(costsList)
+        
+        minMag = self.GAParameters.mutationMagnitude
+        largeCostMag = (self.GAParameters.mutationLargeCostScalingFactor
+                          * np.log((avgParentCost - minCost) + 1))
+        variance = SimpleGAOptimizer.getVarianceOfPopulation(population)
+        lowVarianceMag = 1./(variance + 1./self.GAParameters.varianceMutationMaxMagnitude)
+        
+        mutationScale = minMag + largeCostMag + lowVarianceMag
+        return mutationScale
     
     def getWeightedChoiceList(self, population, costsList):
         # lower cost = higher chance
@@ -110,6 +125,13 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
         
         weights = (normedCostWeights * (1.0-self.GAParameters.diversityChoiceRatio)
                    + normedDiversity * self.GAParameters.diversityChoiceRatio) 
+        
+        array_sum = np.sum(weights)
+        array_has_nan = np.isnan(array_sum)
+        if (array_has_nan):
+            print(weights)
+            print(diversityList)
+            print(normedCostWeights)
         
         return weights
     

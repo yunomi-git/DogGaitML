@@ -1,4 +1,5 @@
 *.dat
 *.gif
 *.pyc
+*.pickle
 /__pycache__/*
