@@ -8,6 +8,8 @@ Created on Fri Dec  3 13:41:54 2021
 import pickle
 
 from FootModelNeuralNet import NNFootModelSimplest
+from FootModel import SimpleFootModel
+
 
 subFolderName = "GA_LinearModel"
 prefix = "12-2-2021_GA_LinearModel"
