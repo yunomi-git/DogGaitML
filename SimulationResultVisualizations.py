@@ -23,8 +23,8 @@ import time
 
 
 subFolderName = "GA_NNSimpleModel"
-prefix = "12-2-2021_GA_NNSimpleModel"
-suffix = "_1"
+prefix = "12-4-2021_GA_NNSimpleModelNoConvergenceWeight"
+suffix = "_0"
 
 oldVisualization= False
 oldSimulationName = "GA1"
@@ -47,7 +47,7 @@ def generateInitialState():
     return initialState
 
 def generateTaskMotion():
-    return TaskMotion(5, 0, 0)
+    return TaskMotion(0.1, 0.1, 2.)
 
 # -----------------------------------------------------------------------
 

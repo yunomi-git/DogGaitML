@@ -11,9 +11,9 @@ from FootModelNeuralNet import NNFootModelSimplest
 from FootModel import SimpleFootModel
 
 
-subFolderName = "GA_LinearModel"
-prefix = "12-2-2021_GA_LinearModel"
-suffix = "_0"
+subFolderName = "GA_NNSimpleModel"
+prefix = "12-3-2021_GA_NNSimpleModelCurriculum"
+suffix = "_1"
 
 simulationName = prefix + suffix
 path = ".\\data\\" + subFolderName + "\\"
@@ -22,7 +22,7 @@ filename =  path + simulationName + '.pickle'
 with open(filename, 'rb') as handle:
     simData = pickle.load(handle)
     
-footModel = SimpleFootModel()
+footModel = NNFootModelSimplest()
 
 simData["footModel"] = footModel
 with open(filename, 'wb') as handle:

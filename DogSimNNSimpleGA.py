@@ -9,7 +9,7 @@ import numpy as np;
 from GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
 from Optimizer import OptimizationEndConditions
 from FootModelNeuralNet import NNFootModelSimplest
-from Simulation import BatchSimulation, Simulation
+from Simulation import BatchSimulation, Simulation, Curriculum
 from DogUtil import DogModel, State, TaskMotion
 # import matplotlib.pyplot as plt;
 # import pyglet
@@ -21,7 +21,7 @@ import time
 
 
 subFolderName = "GA_NNSimpleModel"
-prefix = "12-3-2021_GA_NNSimpleModel"
+prefix = "12-4-2021_GA_NNSimpleModelNoConvergenceWeight"
 suffix = "_0"
 doRunOptimizer = True
 # doRunOptimizer = False
@@ -36,35 +36,42 @@ def generateInitialStatesList():
 
 def generateTaskMotionsList():
     return [TaskMotion(5., 0.1, 0.1)]
+    # return [TaskMotion(5., 0.1, 0.1),
+    #         TaskMotion(0.1, 4., 0.1),
+    #         TaskMotion(0.1, 0.1, 2.)]
 
 footModel = NNFootModelSimplest()
 numParameters = footModel.getNumParameters()
 
 scale = 200.
-populationSize = 100
+populationSize = 200
 
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
 initialStatesList = generateInitialStatesList()
 desiredMotionsList = generateTaskMotionsList()
 
-costWeights = np.array([1.,1.,
-                        1.,1.,
-                        20.,
+costWeights = np.array([0.01,0.01,
+                        0.01,0.01,
+                        0.0,
                         300.,
                         100.])
+curriculum = Curriculum()
+curriculum.setVelocityCostPerFootstep(distVelocityErrorIncreasePerStep=0.5, 
+                                      angVelocityErrorIncreasePerStep=0.5)
+curriculum.setFootDistanceCostPerFootstep(footDistCostPerStep=5)
 numSteps = 4
 
 optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
-                                            mutationMagnitude=10.0,
-                                            decreaseMutationMagnitudeEveryNSteps=75,
-                                            mutationMagnitudeLearningRate=0.8,
-                                            mutationChance=0.9,
-                                            decreaseMutationChanceEveryNSteps=100,
+                                            mutationMagnitude=15.0,
+                                            decreaseMutationMagnitudeEveryNSteps=50,
+                                            mutationMagnitudeLearningRate=0.7,
+                                            mutationChance=1.0,
+                                            decreaseMutationChanceEveryNSteps=200,
                                             mutationChanceLearningRate=0.9,
                                             mutateWithNormalDistribution=False,
-                                            mutationLargeCostScalingFactor=15.0,
-                                            diversityChoiceRatio = 0.5,
-                                            varianceMutationMaxMagnitude = 15.);  
+                                            mutationLargeCostScalingFactor=40.0,
+                                            diversityChoiceRatio = 0.3,
+                                            varianceMutationMaxMagnitude = 10.);  
 
 optimizationEndConditions = OptimizationEndConditions(maxSteps=10000,
                                                       convergenceThreshold=0.0)
@@ -97,6 +104,7 @@ def runOptimizer():
                                     desiredMotionsList = desiredMotionsList, 
                                     numSteps = numSteps, 
                                     costWeights = costWeights)
+    costEvaluator.setCurriculum(curriculum)
     optimizer = SimpleGAOptimizer(initialParameters, costEvaluator, optimizationParameters)
     optimizer.printEveryNSteps = printEveryNSteps
     optimizer.setOptimizationEndConditions(optimizationEndConditions)
@@ -131,6 +139,8 @@ def runOptimizer():
     simData["simInitialStatesList"] = initialStatesList
     simData["simDesiredMotionsList"] = desiredMotionsList
     simData["finalParameters"] = finalParameters
+    simData["footModel"] = footModel
+    simData["curriculum"] = curriculum
     
     with open(filename, 'wb') as handle:
         pickle.dump(simData, handle)
@@ -139,85 +149,3 @@ def runOptimizer():
     
 if __name__ == "__main__":
     main()
-# def plotParameterHistory():
-#     with open(filename, 'rb') as handle:
-#         simData = pickle.load(handle)
-#     parameterHistory = simData["parameterHistory"]
-#     plotParameters(parameterHistory)
-
-    
-# def plotCostHistory():
-#     fig = plt.figure()
-#     ax = fig.add_subplot(1, 1, 1)
-#     with open(filename, 'rb') as handle:
-#         simData = pickle.load(handle)
-#     costHistory = simData["costHistory"]
-#     ax.plot(range(0,np.size(costHistory)), costHistory)
-#     ax.set_yscale('log')
-#     ax.set_ylabel('Cost')
-#     ax.set_xlabel('Optimization Step')
-#     ax.set_title('Convergence Graph')
-
-#     print(costHistory[-1])
-    
-# def drawSimulationVisualizer():
-#     with open(filename, 'rb') as handle:
-#         simData = pickle.load(handle)
-#     parameterHistory = simData["parameterHistory"]
-#     costHistory = simData["costHistory"]
-#     bestCostIndex = np.argmin(costHistory)
-#     finalParameters = parameterHistory[bestCostIndex, :]
-
-#     simulation = Simulation(initialState=initialStatesList[0], 
-#                             footModel=footModel, 
-#                             desiredTaskMotion=desiredMotionsList[0], 
-#                             numSteps=numSteps, 
-#                             costWeights=costWeights)
-    
-#     simulation.getCost(finalParameters)
-#     window = pyglet.window.Window(960, 540)
-#     pyglet.gl.glClearColor(0.6, 0.6, 0.6, 1)
-#     batch = pyglet.graphics.Batch()
-    
-#     visualizer = VisualizerSimulation(simulation.getSimulationHistory())
-#     thingsToDraw = visualizer.visualizeCurrentItem(batch)
-#     a = [thingsToDraw]
-    
-#     @window.event
-#     def on_draw():
-#         window.clear()
-#         batch.draw()
-        
-#     @window.event
-#     def on_mouse_press(x,y, button, modifier):
-#         if button == mouse.LEFT:
-#             for item in a[0]:
-#                 item.delete()
-#             visualizer.increment()
-#             a[0] = visualizer.visualizeCurrentItem(batch)
-#             window.clear()
-#             batch.draw()
-     
-#         elif button == mouse.RIGHT:
-#             for item in a[0]:
-#                 item.delete()
-#             visualizer.decrement()
-#             a[0] = visualizer.visualizeCurrentItem(batch)
-#             window.clear()
-#             batch.draw()
-    
-#     pyglet.app.run() 
-    
-
-# def plotParameters(parameterHistory):
-#     fig = plt.figure()
-#     ax = fig.add_subplot(1, 1, 1)
-#     r, c = parameterHistory.shape
-#     numItems = r
-#     length = c
-#     for i in range(0,length):
-#         ax.plot(range(0,numItems), parameterHistory[:,i]);
-#     ax.set_ylabel('Parameter Value')
-#     ax.set_xlabel('Optimization Step')
-#     ax.set_title('Parameters')
-
