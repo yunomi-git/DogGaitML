@@ -11,6 +11,8 @@ from FootModel import SimpleFootModel
 from CostEvaluator import CostEvaluator
 from DogUtil import DogModel
 import MathUtil as mu
+from abc import ABC, abstractmethod
+
 
 class BatchSimulation(CostEvaluator):
     def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights): 
@@ -19,15 +21,43 @@ class BatchSimulation(CostEvaluator):
         self.desiredMotionsList = desiredMotionsList
         self.numSteps = numSteps
         self.costWeights = costWeights
+        
+    def setCurriculum(self, curriculum):
+        self.curriculum = curriculum
                 
     def getCost(self, parameters):
         totalCost = 0
         for initialState in self.initialStatesList:
             for desiredMotion in self.desiredMotionsList:
                 simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
+                simulation.setCurriculum(self.curriculum)
                 totalCost += simulation.getCost(parameters)
                 
         return totalCost
+    
+class StochasticBatchSimulation(CostEvaluator):
+    def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights): 
+        self.footModel = footModel
+        self.initialStatesList = initialStatesList
+        self.desiredMotionsList = desiredMotionsList
+        self.numSteps = numSteps
+        self.costWeights = costWeights
+        
+        self.numInitialStates = len(initialStatesList)
+        self.numDesiredMotions = len(desiredMotionsList)
+        self.idxInitStates = 0
+        self.idxDesiredMotions = 0
+                
+    def getCost(self, parameters):
+        initialState = self.initialStatesList[self.idxInitStates]
+        desiredMotion = self.desiredMotionsList[self.idxDesiredMotions]
+        simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
+        cost = simulation.getCost(parameters)
+        
+        self.idxInitStates = (self.idxInitStates + 1) % self.numInitialStates
+        self.idxDesiredMotions = (self.idxDesiredMotions + 1) % self.numDesiredMotions
+                
+        return cost
     
 class Simulation(CostEvaluator):
     def __init__(self, initialState, footModel, desiredTaskMotion, numSteps, costWeights):
@@ -39,9 +69,10 @@ class Simulation(CostEvaluator):
         
         self.footModel = footModel
         self.numSteps = numSteps
-        self.costWeights = np.array([costWeights[0], costWeights[1],
+        self.initialCostWeights = np.array([costWeights[0], costWeights[1],
                                      costWeights[2], costWeights[3],
                                      costWeights[4]])
+        self.costWeights = np.copy(self.initialCostWeights)
         self.failureWeights = np.array([costWeights[5], costWeights[5], costWeights[5], costWeights[5]])
         self.failedWeights = costWeights[6]
         
@@ -55,8 +86,12 @@ class Simulation(CostEvaluator):
                                               self.currentRunningCost, 
                                               None,
                                               None))
+        self.curriculum = None
+        self.numStepsTaken = 0
 
-        
+    def setCurriculum(self, curriculum):
+        self.curriculum = curriculum
+    
     def takeSimulationStep(self):
         desiredCommand = self.lastCommand
         if (not self.hasTerminated()):
@@ -69,17 +104,14 @@ class Simulation(CostEvaluator):
             currentCOMInWorldFrame = self.currentCOMInWorldFrame + desiredCommand.comTranslation
             
             if not dynamics.hasFailed():
-                # self.currentState = dynamics.getCurrentState()
-                # self.currentCOMInWorldFrame = self.currentCOMInWorldFrame + desiredCommand.comTranslation
                 self.currentState = currentState
                 self.currentCOMInWorldFrame = currentCOMInWorldFrame
+                self.numStepsTaken += 1
+                if self.curriculum is not None:
+                    self.applyCurriculum()
             else:
                 self.terminate()
-            # self.currentState = dynamics.getCurrentState()
-            # self.currentCOMInWorldFrame = self.currentCOMInWorldFrame + desiredCommand.comTranslation
-            # if dynamics.hasFailed():
-            #     self.terminate()
-                
+
             self.currentRunningCost += self.computeCostFromMotion(desiredTaskMotion=self.desiredTaskMotion, 
                                                               command=desiredCommand, 
                                                               originalState=originalState, 
@@ -98,7 +130,10 @@ class Simulation(CostEvaluator):
                                                       failureMessage)
         self.simulationHistory.append(simulationHistoryItem)
         
-        
+    def applyCurriculum(self):
+        self.costWeights[0] += self.curriculum.distVelocityErrorIncreasePerStep
+        self.costWeights[1] += self.curriculum.angVelocityErrorIncreasePerStep
+        self.costWeights[4] +- self.curriculum.footDistCostPerStep
             
             
     def computeCostFromMotion(self, desiredTaskMotion, command, originalState, currentState, failureMessage):
@@ -167,3 +202,15 @@ class SimulationHistoryItem():
         self.runningCost = runningCost
         self.command = command
         self.failureMessage = failureMessage
+        
+class Curriculum():
+    def __init__(self):
+        pass
+        
+    def setVelocityCostPerFootstep(self, distVelocityErrorIncreasePerStep, angVelocityErrorIncreasePerStep):
+        self.distVelocityErrorIncreasePerStep = distVelocityErrorIncreasePerStep
+        self.angVelocityErrorIncreasePerStep = angVelocityErrorIncreasePerStep
+    def setFootDistanceCostPerFootstep(self, footDistCostPerStep):
+        self.footDistCostPerStep = footDistCostPerStep
+
+    

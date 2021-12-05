@@ -94,7 +94,7 @@ class AckleyCostEvaluator(CostEvaluator2D):
         return (32.768, 32.768)
     
     def getKnownGlobalMinima(self):
-        return [0, np.array([0, 0])]
+        return [np.array([0, 0, 0])]
     
     def getCost(self, value):
         x = value[0]
@@ -111,12 +111,12 @@ class EggHolderCostEvaluator(CostEvaluator2D):
         return (512, 512)
     
     def getKnownGlobalMinima(self):
-        return [np.array([512, 404.2319, -95.96407 + 100])]
+        return [np.array([512, 404.2319, -95.96407])]
     
     def getCost(self, value):
         x = value[0]
         y = value[1]
         return (-(y + 47) * np.sin(np.sqrt(np.abs(y + x / 2.0 + 47)))
-                -x * np.sin(np.sqrt(np.abs(x - y - 47)))) * 0.1 + 100
+                -x * np.sin(np.sqrt(np.abs(x - y - 47)))) * 0.1
 
 

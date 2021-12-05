@@ -17,6 +17,8 @@ from pyglet.window import mouse
 from VisualizerSimulation import VisualizerSimulation
 import pickle
 from pynput import keyboard
+import os
+
 
 
 def generateInitialStatesList():
@@ -30,14 +32,11 @@ def generateTaskMotionsList():
     return [TaskMotion(5, 0, 0)]
 
 
-#TODO find a way to save these to file
 footModel = SimpleFootModel()
 numParameters = footModel.getNumParameters()
 
-
-scale = 5.
-populationSize = 10
-
+scale = 200.
+populationSize = 100
 
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
 initialStatesList = generateInitialStatesList()
@@ -50,23 +49,33 @@ costWeights = np.array([1.,1.,
                         100.])
 numSteps = 4
 
-optimizationParameters = SimpleGAParameters(crossoverRatio=0.7, 
-                                            mutationChance=0.9, 
-                                            mutationMagnitude=10,
-                                            decreaseMutationMagnitudeEveryNSteps=10,
+optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
+                                            mutationMagnitude=10.0,
+                                            decreaseMutationMagnitudeEveryNSteps=50,
                                             mutationMagnitudeLearningRate=0.8,
-                                            decreaseMutationChanceEveryNSteps=10,
-                                            mutationChanceLearningRate=0.8);   
+                                            mutationChance=0.9,
+                                            decreaseMutationChanceEveryNSteps=100,
+                                            mutationChanceLearningRate=0.9,
+                                            mutateWithNormalDistribution=False,
+                                            mutationLargeCostScalingFactor=10.0,
+                                            diversityChoiceRatio = 0.5,
+                                            varianceMutationMaxMagnitude = 10.);  
 
-
-printEveryNSteps = 100
-optimizationEndConditions = OptimizationEndConditions(maxSteps=100000,
+optimizationEndConditions = OptimizationEndConditions(maxSteps=10000,
                                                       convergenceThreshold=0.0)
 
+printEveryNSteps = 100
 endEarly = False
 
-simulationName = "test"
-readSimulationName = "test"
+subFolderName = "GA_LinearModel"
+prefix = "12-2-2021_GA_LinearModel"
+suffix = "_0"
+simulationName = prefix + suffix
+# readSimulationName = simulationName
+path = ".\\data\\" + subFolderName + "\\"
+if not os.path.isdir(path):
+    os.mkdir(path)
+filename =  path + simulationName + '.pickle'
 
 
 def runOptimizer():    
@@ -82,21 +91,43 @@ def runOptimizer():
     optimizer.printEveryNSteps = printEveryNSteps
     # optimizer.optimizeUntilEndCondition(optimizationEndConditions);
     optimizer.setOptimizationEndConditions(optimizationEndConditions)
-    while (not optimizer.hasReachedEndCondition()):
-        optimizer.step();
-        if (endEarly):
-            optimizer.endEarly()
-        if (optimizer.stepCount % optimizer.printEveryNSteps == 0):
-            print("step: " + str(optimizer.stepCount))
-            value, cost = optimizer.getCurrentStateAndCost()
-            print("cost: " + str(cost))
+    try:
+        while (not optimizer.hasReachedEndCondition()):
+            optimizer.step();
+            if (endEarly):
+                optimizer.endEarly()
+            if (optimizer.stepCount % optimizer.printEveryNSteps == 0):
+                print("step: " + str(optimizer.stepCount))
+                value, cost = optimizer.getCurrentStateAndCost()
+                print("cost: " + str(cost))
+    except KeyboardInterrupt:
+        pass
+        
     
 
     parameterHistory, costHistory = optimizer.getFullHistory();
     finalParameters = parameterHistory[-1,:]
-    np.savetxt(".\\data\\" +simulationName + '_parameterHistory.dat', parameterHistory)
-    np.savetxt(".\\data\\"+simulationName + '_costHistory.dat', costHistory)
-    np.savetxt(".\\data\\"+simulationName + '_parameters.dat', finalParameters)
+    # np.savetxt(".\\data\\" +simulationName + '_parameterHistory.dat', parameterHistory)
+    # np.savetxt(".\\data\\"+simulationName + '_costHistory.dat', costHistory)
+    # np.savetxt(".\\data\\"+simulationName + '_parameters.dat', finalParameters)
+    
+    simData = {}
+    simData["parameterHistory"] = parameterHistory
+    simData["costHistory"] = costHistory
+    simData["optimizationParameters"] = optimizationParameters
+    simData["optimizationPopulationSize"] = populationSize
+    simData["optimizationEndConditions"] = optimizationEndConditions
+    simData["simNumFootSteps"] = numSteps
+    simData["simCostWeights"] = costWeights
+    simData["simInitialStatesList"] = initialStatesList
+    simData["simDesiredMotionsList"] = desiredMotionsList
+    simData["finalParameters"] = finalParameters
+    
+    
+    with open(filename, 'wb') as handle:
+        pickle.dump(simData, handle)
+    
+    print("saved")
 
 def on_press(key):
     try:
@@ -108,23 +139,30 @@ def on_press(key):
         pass
 
 def main():
-    runOptimizer()
+    # runOptimizer()
     plotParameterHistory()
     plotCostHistory()
     drawSimulationVisualizer()
 
-    
+
 
 def plotParameterHistory():
-    parameterHistory = np.loadtxt(".\\data\\" +readSimulationName + '_parameterHistory.dat')
+    with open(filename, 'rb') as handle:
+        simData = pickle.load(handle)
+    parameterHistory = simData["parameterHistory"]
     plotParameters(parameterHistory)
-    print(footModel.convertParametersToModel(parameterHistory[0,:] - parameterHistory[-1,:]))
+    # parameterHistory = np.loadtxt(".\\data\\" +readSimulationName + '_parameterHistory.dat')
+    # plotParameters(parameterHistory)
+    # print(footModel.convertParametersToModel(parameterHistory[0,:] - parameterHistory[-1,:]))
 
     
 def plotCostHistory():
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    costHistory = np.loadtxt(".\\data\\" +readSimulationName + '_costHistory.dat')
+    with open(filename, 'rb') as handle:
+        simData = pickle.load(handle)
+    costHistory = simData["costHistory"]
+    # costHistory = np.loadtxt(".\\data\\" +readSimulationName + '_costHistory.dat')
     ax.plot(range(0,np.size(costHistory)), costHistory)
     ax.set_yscale('log')
     ax.set_ylabel('Cost')
@@ -134,8 +172,12 @@ def plotCostHistory():
     print(costHistory[-1])
     
 def drawSimulationVisualizer():
-    costHistory = np.loadtxt(".\\data\\" +readSimulationName + '_costHistory.dat')
-    parameterHistory = np.loadtxt(".\\data\\" +readSimulationName + '_parameterHistory.dat')
+    with open(filename, 'rb') as handle:
+        simData = pickle.load(handle)
+    parameterHistory = simData["parameterHistory"]
+    costHistory = simData["costHistory"]
+    # costHistory = np.loadtxt(".\\data\\" +readSimulationName + '_costHistory.dat')
+    # parameterHistory = np.loadtxt(".\\data\\" +readSimulationName + '_parameterHistory.dat')
     bestCostIndex = np.argmin(costHistory)
     finalParameters = parameterHistory[bestCostIndex, :]
     # finalParameters = np.loadtxt(".\\data\\" +readSimulationName + '_parameters.dat')
