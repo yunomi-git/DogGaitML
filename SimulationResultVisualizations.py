@@ -23,8 +23,8 @@ import time
 
 
 subFolderName = "GA_NNSimpleModel"
-prefix = "12-4-2021_GA_NNSimpleModelNoConvergenceWeight"
-suffix = "_0"
+prefix = "12-31-2021_GA_NNSimpleModel"
+suffix = "_test"
 
 oldVisualization= False
 oldSimulationName = "GA1"

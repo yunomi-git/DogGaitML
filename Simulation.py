@@ -12,31 +12,37 @@ from CostEvaluator import CostEvaluator
 from DogUtil import DogModel
 import MathUtil as mu
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from DebugMessage import DebugMessage
+
+
 
 
 class BatchSimulation(CostEvaluator):
     def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights): 
+        super().__init__()
         self.footModel = footModel
         self.initialStatesList = initialStatesList
         self.desiredMotionsList = desiredMotionsList
         self.numSteps = numSteps
         self.costWeights = costWeights
-        
-    def setCurriculum(self, curriculum):
-        self.curriculum = curriculum
                 
     def getCost(self, parameters):
         totalCost = 0
+        self.debugMessage = DebugMessage()
+
         for initialState in self.initialStatesList:
             for desiredMotion in self.desiredMotionsList:
                 simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
-                simulation.setCurriculum(self.curriculum)
+                simulation.setOptimizerIteration(self.optimizerIteration)
                 totalCost += simulation.getCost(parameters)
+                self.debugMessage.appendMessage("sim", simulation.getDebugMessage())
                 
         return totalCost
     
 class StochasticBatchSimulation(CostEvaluator):
     def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights): 
+        super().__init__()
         self.footModel = footModel
         self.initialStatesList = initialStatesList
         self.desiredMotionsList = desiredMotionsList
@@ -52,15 +58,18 @@ class StochasticBatchSimulation(CostEvaluator):
         initialState = self.initialStatesList[self.idxInitStates]
         desiredMotion = self.desiredMotionsList[self.idxDesiredMotions]
         simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
+        simulation.setOptimizerIteration(self.optimizerIteration)
         cost = simulation.getCost(parameters)
         
         self.idxInitStates = (self.idxInitStates + 1) % self.numInitialStates
         self.idxDesiredMotions = (self.idxDesiredMotions + 1) % self.numDesiredMotions
-                
+             # should also shuffle these  
         return cost
     
 class Simulation(CostEvaluator):
-    def __init__(self, initialState, footModel, desiredTaskMotion, numSteps, costWeights):
+    def __init__(self, initialState, footModel, desiredTaskMotion, 
+                 numSteps, costWeights):
+        super().__init__()
         self.simulationHistory = [];
 
         self.currentCOMInWorldFrame = np.array([0.,0.]);
@@ -69,12 +78,6 @@ class Simulation(CostEvaluator):
         
         self.footModel = footModel
         self.numSteps = numSteps
-        self.initialCostWeights = np.array([costWeights[0], costWeights[1],
-                                     costWeights[2], costWeights[3],
-                                     costWeights[4]])
-        self.costWeights = np.copy(self.initialCostWeights)
-        self.failureWeights = np.array([costWeights[5], costWeights[5], costWeights[5], costWeights[5]])
-        self.failedWeights = costWeights[6]
         
         self.desiredTaskMotion = desiredTaskMotion
         
@@ -86,11 +89,10 @@ class Simulation(CostEvaluator):
                                               self.currentRunningCost, 
                                               None,
                                               None))
-        self.curriculum = None
         self.numStepsTaken = 0
-
-    def setCurriculum(self, curriculum):
-        self.curriculum = curriculum
+        self.costWeights = costWeights
+        
+        #simulation should calculate the values here.
     
     def takeSimulationStep(self):
         desiredCommand = self.lastCommand
@@ -107,21 +109,23 @@ class Simulation(CostEvaluator):
                 self.currentState = currentState
                 self.currentCOMInWorldFrame = currentCOMInWorldFrame
                 self.numStepsTaken += 1
-                if self.curriculum is not None:
-                    self.applyCurriculum()
+                self.applyPostStepCostActions()
             else:
                 self.terminate()
 
-            self.currentRunningCost += self.computeCostFromMotion(desiredTaskMotion=self.desiredTaskMotion, 
-                                                              command=desiredCommand, 
-                                                              originalState=originalState, 
-                                                              currentState=currentState, 
-                                                              failureMessage=dynamics.getFailureMessage()); 
+            cost = self.computeCostBeforeTermination(desiredTaskMotion=self.desiredTaskMotion, 
+                                command=desiredCommand, 
+                                originalState=originalState, 
+                                currentState=currentState, 
+                                failureMessage=dynamics.getFailureMessage()); 
+            
             self.lastCommand = desiredCommand
             failureMessage = dynamics.getFailureMessage()
         else:
-            self.currentRunningCost += self.computeCostAfterFail()
+            cost = self.computeCostAfterTermination()
             failureMessage = None #TODO should change this to "last error message"
+        
+        self.currentRunningCost += cost
             
         simulationHistoryItem = SimulationHistoryItem(self.currentState, 
                                                       self.currentCOMInWorldFrame, 
@@ -130,23 +134,32 @@ class Simulation(CostEvaluator):
                                                       failureMessage)
         self.simulationHistory.append(simulationHistoryItem)
         
-    def applyCurriculum(self):
-        self.costWeights[0] += self.curriculum.distVelocityErrorIncreasePerStep
-        self.costWeights[1] += self.curriculum.angVelocityErrorIncreasePerStep
-        self.costWeights[4] +- self.curriculum.footDistCostPerStep
-            
+    def computeCostBeforeTermination(self, desiredTaskMotion, command, originalState, currentState, failureMessage):
+        if failureMessage.failureHasOccurred():
+            # "stability" ability to take all n steps
+            cost = self.computeCostFromInitialFailure(desiredTaskMotion, 
+                                                        command, 
+                                                        originalState, 
+                                                        currentState, 
+                                                        failureMessage); 
+        else:
+            # cost if motion is successful
+            cost = self.computeCostFromMotion(desiredTaskMotion, 
+                                                command, 
+                                                originalState, 
+                                                currentState, 
+                                                failureMessage); 
+        return cost
+        
+    def applyPostStepCostActions(self):
+        pass
+        # self.costWeights.comNormTranslationError += self.costWeights.comNormTranslationErrorCostIncPerStep
+        # self.costWeights.comNormRotationError += self.costWeights.comNormRotationErrorCostIncPerStep
+        # self.costWeights.footNormErrorFromIdeal += self.costWeights.footNormErrorFromIdealCostIncPerStep
             
     def computeCostFromMotion(self, desiredTaskMotion, command, originalState, currentState, failureMessage):
         cost = 0
-        if failureMessage.failureHasOccurred():
-            # "stability" ability to take all n steps
-            failures = np.array([failureMessage.comIsNotContainedAtStart, 
-                                 failureMessage.comIsNotContainedAtEnd, 
-                                 failureMessage.swingFootPlacementOutOfBounds, 
-                                 failureMessage.anchoredFootPlacementsOutOfBounds * failureMessage.numAnchoredFootPlacementsOutOfBounds])
-            failureCost = np.dot(failures, self.failureWeights)
-            cost += failureCost
-
+        
         # "speed" error in command motion from input motion
         desiredTranslation = np.array([desiredTaskMotion.translationX, desiredTaskMotion.translationY])
         normDistErr = np.linalg.norm(desiredTranslation - command.comTranslation) / DogModel.maximumCOMTranslationDistance
@@ -169,14 +182,49 @@ class Simulation(CostEvaluator):
         distances = dogModel.getPostMotionFootDistancesFromIdeal(currentFootState, command.getTaskMotion())
         normFootErr = np.sum(distances) / DogModel.maximumCOMTranslationDistance
         
-        errors = np.array([normDistErr, normAngErr, 
-                           normDDist, normDAng, 
-                           normFootErr])
-        cost += np.dot(self.costWeights, np.square(errors))
+        cost += (self.costWeights.comNormTranslationError * normDistErr +
+                 self.costWeights.comNormRotationError * normAngErr + 
+                 self.costWeights.comTranslationSmoothness * normDDist + 
+                 self.costWeights.comRotationSmoothness * normDAng +
+                 self.costWeights.footNormErrorFromIdeal * normFootErr)
+        
         return cost
     
-    def computeCostAfterFail(self):
-        return self.failedWeights
+    def computeCostAfterTermination(self):
+        return self.costWeights.failureStepsAfterTermination
+    
+    def computeCostFromInitialFailure(self, desiredTaskMotion, command, originalState, currentState, failureMessage):
+        cost = (self.costWeights.failureComUnsupportedAtStart * failureMessage.comIsNotContainedAtStart +
+                     self.costWeights.failureComUnsupportedAtEnd * failureMessage.comIsNotContainedAtEnd +
+                     self.costWeights.failureSwingFootOutOfBounds * failureMessage.swingFootPlacementOutOfBounds +
+                     self.costWeights.failureAnchoredFootOutOfBounds * failureMessage.anchoredFootPlacementsOutOfBounds 
+                                                                     * failureMessage.numAnchoredFootPlacementsOutOfBounds)
+    
+        # distance of foot placements from maximum foot range
+        if (failureMessage.swingFootPlacementOutOfBounds or failureMessage.anchoredFootPlacementsOutOfBounds):
+            currentFootState = currentState.footState
+            dogModel = DogModel(originalState)
+            distances = dogModel.getPostMotionFootDistancesFromIdeal(currentFootState, command.getTaskMotion())
+            
+            outOfBoundDistances = distances - DogModel.maximumFootDistanceFromIdeal
+            outOfBoundDistances *= (outOfBoundDistances > 0) # only erroneous feet are considered
+            
+            normFootErr = np.sum(outOfBoundDistances) / DogModel.maximumCOMTranslationDistance
+            self.debugMessage.appendMessage("normFootErr", normFootErr)
+            self.debugMessage.appendMessage("numBadFeet", failureMessage.numAnchoredFootPlacementsOutOfBounds + failureMessage.swingFootPlacementOutOfBounds)
+            cost += normFootErr * self.costWeights.failureFootOutOfBoundsErrorFromIdeal
+            
+        # distance of com from centroid
+        if (failureMessage.comIsNotContainedAtEnd):
+            dogModel = DogModel(currentState)
+            footToMove = command.footToMove
+            supportingFeet = dogModel.getEveryFootExcept(footToMove)
+            centroid = np.mean(supportingFeet, axis = 0)
+            comDistanceFromCentroid = np.linalg.norm(centroid)
+            normComError = comDistanceFromCentroid / DogModel.maximumCOMTranslationDistance
+            cost += normComError * self.costWeights.failureComEndErrorFromCentroid
+        
+        return cost
     
     def terminate(self):
         self.terminated = True
@@ -195,6 +243,9 @@ class Simulation(CostEvaluator):
     
         
         
+    
+        
+        
 class SimulationHistoryItem():
     def __init__(self, state, comInWorldFrame, runningCost, command, failureMessage):
         self.state = state;
@@ -203,14 +254,53 @@ class SimulationHistoryItem():
         self.command = command
         self.failureMessage = failureMessage
         
-class Curriculum():
-    def __init__(self):
-        pass
-        
-    def setVelocityCostPerFootstep(self, distVelocityErrorIncreasePerStep, angVelocityErrorIncreasePerStep):
-        self.distVelocityErrorIncreasePerStep = distVelocityErrorIncreasePerStep
-        self.angVelocityErrorIncreasePerStep = angVelocityErrorIncreasePerStep
-    def setFootDistanceCostPerFootstep(self, footDistCostPerStep):
-        self.footDistCostPerStep = footDistCostPerStep
+@dataclass 
+class CostWeights():
+    failureStepsAfterTermination : float = 0.0
+    failureSwingFootOutOfBounds : float = 0.0
+    failureAnchoredFootOutOfBounds : float = 0.0
+    failureComUnsupportedAtStart : float = 0.0
+    failureComUnsupportedAtEnd : float = 0.0
+    failureFootOutOfBoundsErrorFromIdeal : float = 0.0
+    failureComEndErrorFromCentroid : float = 0.0
+    
+    comNormTranslationErrorInitial : float = 0.0
+    comNormRotationErrorInitial : float = 0.0
+    comTranslationSmoothnessInitial : float = 0.0
+    comRotationSmoothnessInitial : float = 0.0
+    footNormErrorFromIdealInitial : float = 0.0
+    
+    # comNormTranslationErrorFinalStep : float = 0.0
+    # comNormRotationErrorFinalStep : float = 0.0
+    # footNormErrorFromIdealFinalStep : float = 0.0
+    
+    # comNormTranslationErrorMatureInNIterations : float = 0.0
+    # comNormRotationErrorMatureInNIterations : float = 0.0
+    # footNormErrorFromIdealMatureInNIterations : float = 0.0
+    
+    
+    
+    
+    
+    
+    
+    
+    
+# def convertOldCostWeightsToNew(costArray):
+#         self.initialCostWeights = np.array([costWeights[0], costWeights[1],
+#                                      costWeights[2], costWeights[3],
+#                                      costWeights[4]])
+#         self.costWeights = np.copy(self.initialCostWeights)
+#         self.failureWeights = np.array([costWeights[5], costWeights[5], costWeights[5], costWeights[5]])
+#         self.failedWeights = costWeights[6]
+#     costWeights = CostWeights();
+#     return costWeights
+
+# costWeights = np.array([20.,20.0,
+#                         0.0,0.0,
+#                         0.1,
+#                         300.,
+#                         100.])
+
 
     

@@ -8,6 +8,7 @@ import numpy as np;
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import CostEvaluator
+from DebugMessage import DebugMessage
 
 
 class Optimizer(ABC):
@@ -26,18 +27,29 @@ class Optimizer(ABC):
         self.convergenceThreshold = 0.0
 
         self.endNow = False
+        
+        self.debugMessage = DebugMessage()
     
     @abstractmethod
     def takeStepAndGetValueAndCost(self):
         pass
     
     def step(self):
+        self.debugMessage = DebugMessage()
+        
+        self.costEvaluator.setOptimizerIteration(self.stepCount)
         value, cost = self.takeStepAndGetValueAndCost()
         self.value = value
         
         self.valueHistory = np.append(self.valueHistory, [self.value], axis=0)
         self.costHistory = np.append(self.costHistory, cost)
         self.stepCount += 1;
+        
+        self.debugMessage.appendMessage("step", self.stepCount)
+        self.debugMessage.appendMessage("cost", cost)
+
+
+        
         
     def getCurrentStateAndCost(self):
         return self.valueHistory[-1], self.costHistory[-1]
@@ -71,10 +83,11 @@ class Optimizer(ABC):
 
             self.step();
             if (self.stepCount % self.printEveryNSteps == 0):
-                print("step: " + str(self.stepCount))
-                value, cost = self.getCurrentStateAndCost()
-                print("cost: " + str(cost))
-      
+                self.printDebug()
+
+    def printDebug(self):
+        print(self.debugMessage)
+                
     # def stoppingConditionsHaveBeenMet(self):
     #     return self.hasReachedMinimum(convergenceThreshold) or self.stepCount >= maxCount
     

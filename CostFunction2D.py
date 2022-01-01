@@ -11,6 +11,7 @@ from CostEvaluator import CostEvaluator
 
 class CostEvaluator2D(CostEvaluator):
     def __init__(self):
+        super().__init__()
         pass
     
     @abstractmethod
@@ -33,6 +34,7 @@ class CostEvaluator2D(CostEvaluator):
     
 class ParaboloidCostEvaluator(CostEvaluator2D):
     def __init__(self, a, b, c, d, e):
+        super().__init__()
         self.a = a;
         self.b = b
         self.c = c
@@ -54,6 +56,7 @@ class ParaboloidCostEvaluator(CostEvaluator2D):
     
 class SmithCostEvaluator(CostEvaluator2D):
     def __init__(self, a=0.05, b=10):
+        super().__init__()
         self.a = a
         self.b = b
         
@@ -70,6 +73,7 @@ class SmithCostEvaluator(CostEvaluator2D):
     
 class SixHumpCamelCostEvaluator(CostEvaluator2D):
     def __init__(self):
+        super().__init__()
         pass
         
     def getDefaultRange(self):
@@ -86,6 +90,7 @@ class SixHumpCamelCostEvaluator(CostEvaluator2D):
     
 class AckleyCostEvaluator(CostEvaluator2D):
     def __init__(self, a=20, b=0.2, c=6.28318530):
+        super().__init__()
         self.a = a
         self.b = b
         self.c = c
@@ -105,6 +110,7 @@ class AckleyCostEvaluator(CostEvaluator2D):
     
 class EggHolderCostEvaluator(CostEvaluator2D):
     def __init__(self):
+        super().__init__()
         pass
         
     def getDefaultRange(self):

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from scipy.special import softmax
 import random
+from DebugMessage import DebugMessage
 
 
 class GeneticAlgorithmOptimizer(Optimizer):
@@ -19,6 +20,7 @@ class GeneticAlgorithmOptimizer(Optimizer):
         super().__init__(initialValue, costEvaluator);
         self.population = initialPopulation
         self.populationSize = np.ma.size(initialPopulation, 0)
+        self.debugMessagesList = []
         self.costsList = self.getCostListOfPopulation(self.population)
         
     def takeStepAndGetValueAndCost(self):
@@ -28,6 +30,9 @@ class GeneticAlgorithmOptimizer(Optimizer):
         minCost = min(self.costsList)
         minCostIndex = self.costsList.index(minCost)
         value = self.population[minCostIndex, :]
+        
+        bestDebugMessage = self.debugMessagesList[minCostIndex]
+        self.debugMessage.appendMessage("EvaluatorMessage", bestDebugMessage)
 
         self.postStepActions()
         return value, minCost
@@ -42,9 +47,11 @@ class GeneticAlgorithmOptimizer(Optimizer):
     
     def getCostListOfPopulation(self, population):
         costsList = []
+        self.debugMessagesList = []
         for i in range(0, self.populationSize):
             cost = self.costEvaluator.getCost(population[i,:])
             costsList.append(cost)
+            self.debugMessagesList.append(self.costEvaluator.getDebugMessage())
         return costsList
     
         
@@ -84,11 +91,6 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
             avgParentCost = np.mean(costs)
 
             child = self.getChildFromParents(parents)
-            # mutationScale = self.GAParameters.mutationMagnitude
-            # mutationScale += (self.GAParameters.mutationLargeCostScalingFactor
-            #                   * np.log((avgParentCost - minCost) + 1))
-            # variance = SimpleGAOptimizer.getVarianceOfPopulation(population)
-            # mutationScale += 1./(variance + 1./self.GAParameters.varianceMutationMaxMagnitude)
             mutationScale = self.getMutationScaling(population, costsList, avgParentCost)
             child = self.generateMutations(child, mutationScale)
             
@@ -111,9 +113,6 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
     def getWeightedChoiceList(self, population, costsList):
         # lower cost = higher chance
         invertedCosts = -np.array(costsList) 
-        
-        # should account for negative costs, but not empirically supported
-        # normedCostWeights = softmax(invertedCosts) 
         
         # shift to positive and normalize
         invertedCosts -= min(invertedCosts)
@@ -200,4 +199,6 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
             
         if ((self.stepCount + 1) % self.GAParameters.decreaseMutationChanceEveryNSteps == 0):
             self.GAParameters.mutationChance *= self.GAParameters.mutationChanceLearningRate
+
+        
 
