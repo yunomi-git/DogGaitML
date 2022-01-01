@@ -23,8 +23,8 @@ import time
 
 
 subFolderName = "GA_NNSimpleModel"
-prefix = "12-31-2021_GA_NNSimpleModel"
-suffix = "_test"
+prefix = "01-01-2022_GA_NNSimpleModel_NewCostWeights"
+suffix = "_04"
 
 oldVisualization= False
 oldSimulationName = "GA1"
@@ -41,13 +41,13 @@ numSteps = 4
 
 def generateInitialState():
     dogModel = DogModel()
-    initialCOM = np.array([-20.0, 0])
+    initialCOM = np.array([-20.0, 0.01])
     initialFootState = dogModel.defaultFootState - initialCOM
     initialState = State(initialFootState, 0.)
     return initialState
 
 def generateTaskMotion():
-    return TaskMotion(0.1, 0.1, 2.)
+    return TaskMotion(5., 0.1, 0.1)
 
 # -----------------------------------------------------------------------
 
@@ -110,6 +110,7 @@ def drawSimulationVisualizer():
         footModel = simData["footModel"]
         
     bestCostIndex = np.argmin(costHistory)
+    print(costHistory[bestCostIndex])
     finalParameters = parameterHistory[bestCostIndex, :]
     
     initialState = generateInitialState()
@@ -122,7 +123,8 @@ def drawSimulationVisualizer():
                             costWeights=costWeights)
     print(desiredMotion)
     print(initialState)
-    simulation.getCost(finalParameters)
+    cost = simulation.getCost(finalParameters)
+    print(cost)
     window = pyglet.window.Window(960, 540)
     pyglet.gl.glClearColor(0.6, 0.6, 0.6, 1)
     batch = pyglet.graphics.Batch()

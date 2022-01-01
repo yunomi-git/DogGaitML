@@ -89,7 +89,7 @@ class Simulation(CostEvaluator):
                                               self.currentRunningCost, 
                                               None,
                                               None))
-        self.numStepsTaken = 0
+        self.numSuccessfulStepsTaken = 0
         self.costWeights = costWeights
         
         #simulation should calculate the values here.
@@ -108,7 +108,7 @@ class Simulation(CostEvaluator):
             if not dynamics.hasFailed():
                 self.currentState = currentState
                 self.currentCOMInWorldFrame = currentCOMInWorldFrame
-                self.numStepsTaken += 1
+                self.numSuccessfulStepsTaken += 1
                 self.applyPostStepCostActions()
             else:
                 self.terminate()
@@ -182,11 +182,11 @@ class Simulation(CostEvaluator):
         distances = dogModel.getPostMotionFootDistancesFromIdeal(currentFootState, command.getTaskMotion())
         normFootErr = np.sum(distances) / DogModel.maximumCOMTranslationDistance
         
-        cost += (self.costWeights.comNormTranslationError * normDistErr +
-                 self.costWeights.comNormRotationError * normAngErr + 
-                 self.costWeights.comTranslationSmoothness * normDDist + 
-                 self.costWeights.comRotationSmoothness * normDAng +
-                 self.costWeights.footNormErrorFromIdeal * normFootErr)
+        cost += (self.costWeights.comNormTranslationErrorInitial * normDistErr +
+                 self.costWeights.comNormRotationErrorInitial * normAngErr + 
+                 self.costWeights.comTranslationSmoothnessInitial * normDDist + 
+                 self.costWeights.comRotationSmoothnessInitial * normDAng +
+                 self.costWeights.footNormErrorFromIdealInitial * normFootErr)
         
         return cost
     
@@ -236,6 +236,7 @@ class Simulation(CostEvaluator):
         self.footModel.setParameters(modelParameters)
         for i in range(self.numSteps):
             self.takeSimulationStep()
+        self.debugMessage.appendMessage("numStepsSuccess", self.numSuccessfulStepsTaken)
         return self.currentRunningCost
     
     def getSimulationHistory(self):

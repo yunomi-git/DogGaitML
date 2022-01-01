@@ -36,19 +36,17 @@ class Optimizer(ABC):
     
     def step(self):
         self.debugMessage = DebugMessage()
+        self.debugMessage.appendMessage("step", self.stepCount+1)
         
         self.costEvaluator.setOptimizerIteration(self.stepCount)
         value, cost = self.takeStepAndGetValueAndCost()
         self.value = value
         
+        self.debugMessage.appendMessage("cost", cost)
+        
         self.valueHistory = np.append(self.valueHistory, [self.value], axis=0)
         self.costHistory = np.append(self.costHistory, cost)
         self.stepCount += 1;
-        
-        self.debugMessage.appendMessage("step", self.stepCount)
-        self.debugMessage.appendMessage("cost", cost)
-
-
         
         
     def getCurrentStateAndCost(self):

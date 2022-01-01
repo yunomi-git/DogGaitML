@@ -21,8 +21,8 @@ import time
 
 
 subFolderName = "GA_NNSimpleModel"
-prefix = "12-31-2021_GA_NNSimpleModel"
-suffix = "_test"
+prefix = "01-01-2022_GA_NNSimpleModel_NewCostWeights"
+suffix = "_04"
 doRunOptimizer = True
 # doRunOptimizer = False
 
@@ -50,19 +50,19 @@ initialParameters = np.random.rand(populationSize, numParameters) * scale - scal
 initialStatesList = generateInitialStatesList()
 desiredMotionsList = generateTaskMotionsList()
 
-costWeights = CostWeights(failureStepsAfterTermination=100.,
-                                failureSwingFootOutOfBounds=300.,
-                                failureAnchoredFootOutOfBounds=300.,
-                                failureComUnsupportedAtStart=300.,
-                                failureComUnsupportedAtEnd=300.,
-                                failureFootOutOfBoundsErrorFromIdeal=1.0,
-                                failureComEndErrorFromCentroid=1.0,
+costWeights = CostWeights(failureStepsAfterTermination=10000.,
+                                failureSwingFootOutOfBounds=200.,
+                                failureAnchoredFootOutOfBounds=200.,
+                                failureComUnsupportedAtStart=200.,
+                                failureComUnsupportedAtEnd=200.,
+                                failureFootOutOfBoundsErrorFromIdeal=5.0,
+                                failureComEndErrorFromCentroid=5.0,
                                 
                                 comNormTranslationErrorInitial = 2.,
                                 comNormRotationErrorInitial = 2.,
                                 comTranslationSmoothnessInitial= 0.1,
                                 comRotationSmoothnessInitial = 0.1,
-                                footNormErrorFromIdealInitial = 0.1)
+                                footNormErrorFromIdealInitial = 1.)
 
 numSteps = 4
 
@@ -78,7 +78,7 @@ optimizationParameters = SimpleGAParameters(crossoverRatio=0.5,
                                             diversityChoiceRatio = 0.3,
                                             varianceMutationMaxMagnitude = 10.);  
 
-optimizationEndConditions = OptimizationEndConditions(maxSteps=3000,
+optimizationEndConditions = OptimizationEndConditions(maxSteps=10000,
                                                       convergenceThreshold=0.0)
 
 printEveryNSteps = 100
