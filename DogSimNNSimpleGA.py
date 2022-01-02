@@ -26,6 +26,18 @@ suffix = "_01"
 doRunOptimizer = True
 # doRunOptimizer = False
 
+startFromPreviousParameters = False
+prevPrefix = "01-02-2022_10x10dataBatch"
+prevSuffix = "_01"
+
+
+simulationName = prefix + suffix
+path = ".\\data\\" + subFolderName + "\\"
+filename =  path + simulationName + '.pickle'
+
+prevSimulationName = prevPrefix + prevSuffix
+prevPath = ".\\data\\" + subFolderName + "\\"
+prevFilename =  prevPath + prevSimulationName + '.pickle'
 # -----------------------------------------------------------------------
 
 def generateRandomInitialState():
@@ -72,9 +84,27 @@ def generateTaskMotionsList(numTasks, maxX, maxY, maxR):
     #         TaskMotion(-0.1, -10., 0.1),
     #         TaskMotion(0.1, -0.1, 10.)]
 
+def generateInitialParametersAround(parametersCenter):
+    initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
+    if parametersCenter is not None:
+        initialParameters[0,numParameters] = np.zeros(numParameters)
+        initialParameters += parametersCenter
+    return initialParameters
+
+def getPreviousParameters(filename):
+    with open(filename, 'rb') as handle:
+        simData = pickle.load(handle)
+    parameterHistory = simData["parameterHistory"]
+    costHistory = simData["costHistory"]    
+        
+    bestCostIndex = np.argmin(costHistory)
+    finalParameters = parameterHistory[bestCostIndex, :]
+    return finalParameters
+
+# -----------------------------------------------------------------------
+
 footModel = NNFootModelSimplest()
 numParameters = footModel.getNumParameters()
-
 
 numInitialStates = 10
 numTasks = 10
@@ -84,7 +114,11 @@ maxTaskR = 10.
 
 scale = 200.
 populationSize = 50
-initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
+prevParameters = None
+if startFromPreviousParameters:
+    prevParameters = getPreviousParameters(prevFilename)
+    
+initialParameters = generateInitialParametersAround(prevParameters)
 initialStatesList = generateInitialStatesList(numInitialStates)
 desiredMotionsList = generateTaskMotionsList(numTasks, maxTaskX, maxTaskY, maxTaskR)
 
@@ -126,11 +160,9 @@ printEveryNSteps = 100
 
 # ============================================================================
 
-simulationName = prefix + suffix
-path = ".\\data\\" + subFolderName + "\\"
-filename =  path + simulationName + '.pickle'
 
 def main():
+    print("Starting from old parameters: " + filename) 
     if os.path.exists(filename):
         overwrite = input("File path exists. Overwrite? <1> yes | <else> no: ")
         if (overwrite != '1'):
