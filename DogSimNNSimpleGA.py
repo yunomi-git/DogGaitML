@@ -22,50 +22,86 @@ import time
 
 subFolderName = "GA_NNSimpleModel_NewCostWeights"
 prefix = "01-01-2022_multipleTasks"
-suffix = "_01"
+suffix = "_02"
 doRunOptimizer = True
 # doRunOptimizer = False
 
 # -----------------------------------------------------------------------
-def generateInitialStatesList():
+
+def generateRandomInitialState():
+    dogModel = DogModel()
+    circleSample = np.random.rand(4,2)
+    circleSample[:,0] = np.sqrt(circleSample[:,0] * DogModel.maximumFootDistanceFromIdeal)
+    perturbations = np.zeros((4,2))
+    perturbations[:,0] = circleSample[:,0] * np.cos(circleSample[:,1] * 2 * np.pi)
+    perturbations[:,1] = circleSample[:,0] * np.sin(circleSample[:,1] * 2 * np.pi)
+    perturbedFootState = dogModel.defaultFootState + perturbations
+    
+    state = State(perturbedFootState, 0.)
+    return state
+    
+def generateInitialStatesList(numStates):
     dogModel = DogModel()
     initialCOM = np.array([-20.0, 0.01])
     initialFootState = dogModel.defaultFootState - initialCOM
     initialState = State(initialFootState, 0.)
-    return [initialState]
+    
+    statesList = []
+    statesList.append(initialState)
+    for i in range(numStates-1):
+        statesList.append(generateRandomInitialState())
+    return statesList
 
-def generateTaskMotionsList():
+def generateRandomTask(maxX, maxY, maxR):
+    sample = np.random.rand(3)
+    normedSample = sample / np.linalg.norm(sample)
+    taskArray = np.array([maxX, maxY, maxR]) * normedSample
+    return TaskMotion(taskArray[0], taskArray[1], taskArray[2])
+
+def generateTaskMotionsList(numTasks, maxX, maxY, maxR):
+    tasksList = []
+    tasksList.append(TaskMotion(5., 0.1, 0.1))
+    for i in range(numTasks-1):
+        tasksList.append(generateRandomTask(maxX, maxY, maxR))
+    return tasksList
     # return [TaskMotion(5., 0.1, 0.1)]
-    return [TaskMotion(5., 0.1, 0.1),
-            TaskMotion(0.1, 4., 0.1),
-            TaskMotion(-0.1, 0.1, 2.),
-            TaskMotion(15., -0.1, 0.1),
-            TaskMotion(-0.1, 10., 0.1),
-            TaskMotion(0.1, -0.1, 10.)]
+    # return [TaskMotion(5., 0.1, 0.1),
+    #         TaskMotion(0.1, 4., 0.1),
+    #         TaskMotion(-0.1, 0.1, 2.),
+    #         TaskMotion(15., -0.1, -2.0),
+    #         TaskMotion(-0.1, -10., 0.1),
+    #         TaskMotion(0.1, -0.1, 10.)]
 
 footModel = NNFootModelSimplest()
 numParameters = footModel.getNumParameters()
 
+
+numInitialStates = 5
+
+maxTaskX = 20.
+maxTaskY = 15.
+maxTaskR = 10.
+numTasks = 5
+
 scale = 200.
 populationSize = 50
-
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
-initialStatesList = generateInitialStatesList()
-desiredMotionsList = generateTaskMotionsList()
+initialStatesList = generateInitialStatesList(numInitialStates)
+desiredMotionsList = generateTaskMotionsList(numTasks, maxTaskX, maxTaskY, maxTaskR)
 
 costWeights = CostWeights(failureStepsAfterTermination=10000.,
-                                failureSwingFootOutOfBounds=200.,
-                                failureAnchoredFootOutOfBounds=200.,
-                                failureComUnsupportedAtStart=200.,
-                                failureComUnsupportedAtEnd=200.,
-                                failureFootOutOfBoundsErrorFromIdeal=5.0,
-                                failureComEndErrorFromCentroid=5.0,
-                                
-                                comNormTranslationErrorInitial = 2.,
-                                comNormRotationErrorInitial = 2.,
-                                comTranslationSmoothnessInitial= 0.1,
-                                comRotationSmoothnessInitial = 0.1,
-                                footNormErrorFromIdealInitial = 1.)
+                            failureSwingFootOutOfBounds=200.,
+                            failureAnchoredFootOutOfBounds=200.,
+                            failureComUnsupportedAtStart=200.,
+                            failureComUnsupportedAtEnd=200.,
+                            failureFootOutOfBoundsErrorFromIdeal=5.0,
+                            failureComEndErrorFromCentroid=5.0,
+                            
+                            comNormTranslationErrorInitial = 2.,
+                            comNormRotationErrorInitial = 2.,
+                            comTranslationSmoothnessInitial= 0.1,
+                            comRotationSmoothnessInitial = 0.1,
+                            footNormErrorFromIdealInitial = 1.)
 
 numSteps = 4
 
@@ -122,9 +158,6 @@ def runOptimizer():
             optimizer.step();
             if (optimizer.stepCount % optimizer.printEveryNSteps == 0):
                 optimizer.printDebug()
-                # print("step: " + str(optimizer.stepCount))
-                # value, cost = optimizer.getCurrentStateAndCost()
-                # print("cost: " + str(cost))
     except KeyboardInterrupt:
         pass
     print("Time elapsed: " + str(time.time() - start_time))

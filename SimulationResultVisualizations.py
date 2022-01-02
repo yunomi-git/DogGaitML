@@ -24,7 +24,7 @@ import time
 
 subFolderName = "GA_NNSimpleModel_NewCostWeights"
 prefix = "01-01-2022_multipleTasks"
-suffix = "_01"
+suffix = "_02"
 
 oldVisualization= False
 oldSimulationName = "GA1"
@@ -41,13 +41,13 @@ numSteps = 4
 
 def generateInitialState():
     dogModel = DogModel()
-    initialCOM = np.array([-20.0, 0.01])
+    initialCOM = np.array([-15.0, 0.01])
     initialFootState = dogModel.defaultFootState - initialCOM
     initialState = State(initialFootState, 0.)
     return initialState
 
 def generateTaskMotion():
-    return TaskMotion(15., -0.1, -0.1)
+    return TaskMotion(5., -0.1, -2.0)
 
 # -----------------------------------------------------------------------
 
