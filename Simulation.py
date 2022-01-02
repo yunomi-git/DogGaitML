@@ -30,13 +30,15 @@ class BatchSimulation(CostEvaluator):
     def getCost(self, parameters):
         totalCost = 0
         self.debugMessage = DebugMessage()
+        i = 0
 
         for initialState in self.initialStatesList:
             for desiredMotion in self.desiredMotionsList:
+                i += 1
                 simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
                 simulation.setOptimizerIteration(self.optimizerIteration)
                 totalCost += simulation.getCost(parameters)
-                self.debugMessage.appendMessage("sim", simulation.getDebugMessage())
+                self.debugMessage.appendMessage("sim" + str(i), simulation.getDebugMessage())
                 
         return totalCost
     

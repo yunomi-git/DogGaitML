@@ -20,9 +20,9 @@ import os
 import time
 
 
-subFolderName = "GA_NNSimpleModel"
-prefix = "01-01-2022_GA_NNSimpleModel_NewCostWeights"
-suffix = "_04"
+subFolderName = "GA_NNSimpleModel_NewCostWeights"
+prefix = "01-01-2022_multipleTasks"
+suffix = "_01"
 doRunOptimizer = True
 # doRunOptimizer = False
 
@@ -35,10 +35,13 @@ def generateInitialStatesList():
     return [initialState]
 
 def generateTaskMotionsList():
-    return [TaskMotion(5., 0.1, 0.1)]
-    # return [TaskMotion(5., 0.1, 0.1),
-    #         TaskMotion(0.1, 4., 0.1),
-    #         TaskMotion(0.1, 0.1, 2.)]
+    # return [TaskMotion(5., 0.1, 0.1)]
+    return [TaskMotion(5., 0.1, 0.1),
+            TaskMotion(0.1, 4., 0.1),
+            TaskMotion(-0.1, 0.1, 2.),
+            TaskMotion(15., -0.1, 0.1),
+            TaskMotion(-0.1, 10., 0.1),
+            TaskMotion(0.1, -0.1, 10.)]
 
 footModel = NNFootModelSimplest()
 numParameters = footModel.getNumParameters()
@@ -69,16 +72,16 @@ numSteps = 4
 optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
                                             mutationMagnitude=15.0,
                                             decreaseMutationMagnitudeEveryNSteps=50,
-                                            mutationMagnitudeLearningRate=0.7,
+                                            mutationMagnitudeLearningRate=0.8,
                                             mutationChance=1.0,
                                             decreaseMutationChanceEveryNSteps=200,
-                                            mutationChanceLearningRate=0.9,
+                                            mutationChanceLearningRate=0.95,
                                             mutateWithNormalDistribution=False,
                                             mutationLargeCostScalingFactor=40.0,
                                             diversityChoiceRatio = 0.3,
                                             varianceMutationMaxMagnitude = 10.);  
 
-optimizationEndConditions = OptimizationEndConditions(maxSteps=10000,
+optimizationEndConditions = OptimizationEndConditions(maxSteps=50000,
                                                       convergenceThreshold=0.0)
 
 printEveryNSteps = 100
