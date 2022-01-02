@@ -9,7 +9,7 @@ import numpy as np;
 from GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
 from Optimizer import OptimizationEndConditions
 from FootModelNeuralNet import NNFootModelSimplest
-from Simulation import BatchSimulation, Simulation, CostWeights
+from Simulation import BatchSimulation, Simulation, CostWeights, StochasticBatchSimulation
 from DogUtil import DogModel, State, TaskMotion
 # import matplotlib.pyplot as plt;
 # import pyglet
@@ -21,8 +21,8 @@ import time
 
 
 subFolderName = "GA_NNSimpleModel_NewCostWeights"
-prefix = "01-01-2022_multipleTasks"
-suffix = "_02"
+prefix = "01-02-2022_10x10dataBatch"
+suffix = "_01"
 doRunOptimizer = True
 # doRunOptimizer = False
 
@@ -76,18 +76,20 @@ footModel = NNFootModelSimplest()
 numParameters = footModel.getNumParameters()
 
 
-numInitialStates = 5
-
+numInitialStates = 10
+numTasks = 10
 maxTaskX = 20.
 maxTaskY = 15.
 maxTaskR = 10.
-numTasks = 5
 
 scale = 200.
 populationSize = 50
 initialParameters = np.random.rand(populationSize, numParameters) * scale - scale/2
 initialStatesList = generateInitialStatesList(numInitialStates)
 desiredMotionsList = generateTaskMotionsList(numTasks, maxTaskX, maxTaskY, maxTaskR)
+
+batchStatesSize = 3
+batchTasksSize = 3
 
 costWeights = CostWeights(failureStepsAfterTermination=10000.,
                             failureSwingFootOutOfBounds=200.,
@@ -108,10 +110,10 @@ numSteps = 4
 optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
                                             mutationMagnitude=15.0,
                                             decreaseMutationMagnitudeEveryNSteps=50,
-                                            mutationMagnitudeLearningRate=0.8,
+                                            mutationMagnitudeLearningRate=0.9,
                                             mutationChance=1.0,
                                             decreaseMutationChanceEveryNSteps=200,
-                                            mutationChanceLearningRate=0.95,
+                                            mutationChanceLearningRate=0.9,
                                             mutateWithNormalDistribution=False,
                                             mutationLargeCostScalingFactor=40.0,
                                             diversityChoiceRatio = 0.3,
@@ -143,11 +145,18 @@ def main():
         runOptimizer()
 
 def runOptimizer():    
-    costEvaluator = BatchSimulation(initialStatesList = initialStatesList, 
-                                    footModel = footModel, 
-                                    desiredMotionsList = desiredMotionsList, 
-                                    numSteps = numSteps, 
-                                    costWeights = costWeights)
+    # costEvaluator = BatchSimulation(initialStatesList = initialStatesList, 
+    #                                 footModel = footModel, 
+    #                                 desiredMotionsList = desiredMotionsList, 
+    #                                 numSteps = numSteps, 
+    #                                 costWeights = costWeights)
+    costEvaluator = StochasticBatchSimulation(initialStatesList = initialStatesList, 
+                                                footModel = footModel, 
+                                                desiredMotionsList = desiredMotionsList, 
+                                                numSteps = numSteps, 
+                                                costWeights = costWeights,
+                                                batchStatesSize = batchStatesSize, 
+                                                batchTasksSize = batchTasksSize)
     optimizer = SimpleGAOptimizer(initialParameters, costEvaluator, optimizationParameters)
     optimizer.printEveryNSteps = printEveryNSteps
     optimizer.setOptimizationEndConditions(optimizationEndConditions)

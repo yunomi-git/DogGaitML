@@ -43,7 +43,8 @@ class BatchSimulation(CostEvaluator):
         return totalCost
     
 class StochasticBatchSimulation(CostEvaluator):
-    def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights): 
+    def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights,
+                 batchStatesSize, batchTasksSize): 
         super().__init__()
         self.footModel = footModel
         self.initialStatesList = initialStatesList
@@ -51,22 +52,35 @@ class StochasticBatchSimulation(CostEvaluator):
         self.numSteps = numSteps
         self.costWeights = costWeights
         
-        self.numInitialStates = len(initialStatesList)
-        self.numDesiredMotions = len(desiredMotionsList)
-        self.idxInitStates = 0
-        self.idxDesiredMotions = 0
+        self.batchStatesSize = batchStatesSize
+        self.batchTasksSize = batchTasksSize
                 
     def getCost(self, parameters):
-        initialState = self.initialStatesList[self.idxInitStates]
-        desiredMotion = self.desiredMotionsList[self.idxDesiredMotions]
-        simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
-        simulation.setOptimizerIteration(self.optimizerIteration)
-        cost = simulation.getCost(parameters)
+        totalCost = 0
+        self.debugMessage = DebugMessage()  
+        statesBatch, tasksBatch = self.chooseRandomBatch()
+        i = 0
+
+
+        for initialState in statesBatch:
+            for desiredMotion in tasksBatch:
+                i += 1
+                simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
+                simulation.setOptimizerIteration(self.optimizerIteration)
+                totalCost += simulation.getCost(parameters)
+                self.debugMessage.appendMessage("sim" + str(i), simulation.getDebugMessage())
+                
+        return totalCost
+    
+    def chooseRandomBatch(self):
+        statesBatch = np.random.choice(self.initialStatesList, 
+                                   size=self.batchStatesSize, 
+                                   replace=False)
+        tasksBatch = np.random.choice(self.desiredMotionsList, 
+                                   size=self.batchTasksSize, 
+                                   replace=False)
+        return statesBatch.tolist(), tasksBatch.tolist()
         
-        self.idxInitStates = (self.idxInitStates + 1) % self.numInitialStates
-        self.idxDesiredMotions = (self.idxDesiredMotions + 1) % self.numDesiredMotions
-             # should also shuffle these  
-        return cost
     
 class Simulation(CostEvaluator):
     def __init__(self, initialState, footModel, desiredTaskMotion, 
