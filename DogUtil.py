@@ -10,16 +10,41 @@ import numpy as np
 import MathUtil as mu
 from Polygon import Triangle2D
 
-@dataclass
 class TaskMotion:
-    translationX : float
-    translationY : float
-    relativeRotation : float
+    def __init__(self, translationX, translationY, relativeRotation):
+        self.translationX = translationX
+        self.translationY = translationY
+        self.relativeRotation = relativeRotation
+        
+    @classmethod
+    def fromVector(cls, translation, relativeRotation):
+        translationX = translation[0]
+        translationY = translation[1]
+        return cls(translationX, translationY, relativeRotation)
+    
+    def translation(self) -> float:
+        return np.array([self.translationX, self.translationY])
+    
+    def setTranslation(self, translation):
+       self.translationX = translation[0]
+       self.translationY = translation[1]
+       
+    def copy(self):
+        return TaskMotion(self.translationX, self.translationY, self.relativeRotation)
     
 class State:
     def __init__(self, footState, absoluteRotation):
         self.footState = footState
-        self.absoluteRotation = absoluteRotation
+        self.absoluteRotation = absoluteRotation # TODO this should be limited within range 0 to 360
+        
+    def copy(self):
+        return State(self.footState.copy(), self.absoluteRotation)
+    
+    def __str__(self):
+        s = ""
+        s += "footState: " + str(self.footState) + "\n"
+        s += "absoluteRotation: " + str(self.absoluteRotation)
+        return s
         
 class Command:
     def __init__(self, footToMove, footTranslation, comTranslation, comRelativeRotation):
@@ -34,10 +59,31 @@ class Command:
                                       relativeRotation=self.comRelativeRotation)
         return taskMotion
     
+    def copy(self):
+        return Command(self.footToMove,
+                       self.footTranslation.copy(),
+                       self.comTranslation.copy(),
+                       self.comRelativeRotation)
+    
+    def equals(self, command):
+        return (self.footToMove == command.footToMove and
+                np.isclose(self.footTranslation, command.footTranslation).all() and
+                np.isclose(self.comTranslation, command.comTranslation).all() and
+                self.comRelativeRotation == command.comRelativeRotation)
+    
+    def __str__(self):
+        s = ""
+        s += "FootToMove: " + str(self.footToMove) + "\n"
+        s += "footTranslation: " + str(self.footTranslation) + "\n"
+        s += "comTranslation: " + str(self.comTranslation) + "\n"
+        s += "comRotation: " + str(self.comRelativeRotation)
+        return s
+        
 
 
 class DogModel():
     # in groups of 4,feet always listed in order UR, BR, BL, UL
+    # x is forward
     # in groups of 3, feet listed as Opposing, Horiz, Vert
     maximumFootDistanceFromIdeal = 100.0
     maximumCOMTranslationDistance = maximumFootDistanceFromIdeal/4.0
