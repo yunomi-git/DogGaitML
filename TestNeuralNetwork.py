@@ -6,7 +6,7 @@ Created on Sun Nov 28 19:36:12 2021
 """
 
 import numpy as np
-from NeuralNetwork import NeuralNetworkSingleLayer as nn
+from NeuralNetwork import NeuralNetworkNLayer as nn
 
 def testInferenceSimple():
     layerDimensions = [2,3,2]

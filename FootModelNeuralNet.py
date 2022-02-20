@@ -6,7 +6,7 @@ Created on Sun Nov 28 20:32:25 2021
 """
 
 from FootModel import FootModel
-from NeuralNetwork import NeuralNetworkSingleLayer as nnsl
+from NeuralNetwork import NeuralNetworkNLayer as nn
 import numpy as np
 from DogUtil import TaskMotion, State, Command, DogModel
 from StateSymmetry import StateRotTaskSymmetry
@@ -14,8 +14,8 @@ from StateSymmetry import StateRotTaskSymmetry
 class NNFootModelSimplest(FootModel):
     def __init__(self, parameters=None):
         LayerDimensions = [12, 21, 9]
-        ActivationFunction = nnsl.softSignActivation
-        self.NN = nnsl(LayerDimensions, ActivationFunction, parameters)
+        ActivationFunction = nn.softSignActivation
+        self.NN = nn(LayerDimensions, ActivationFunction, parameters)
     
     def computeCommandFromState(self, state, desiredMotion):
         inputVect = NNFootModelSimplest.generateStateVector(state, desiredMotion)
@@ -56,8 +56,8 @@ class NNFootModelSimplest(FootModel):
 class NNFootModelDrStange(FootModel): 
     def __init__(self, parameters=None):
         LayerDimensions = [11, 20, 9]
-        ActivationFunction = nnsl.softSignActivation
-        self.NN = nnsl(LayerDimensions, ActivationFunction, parameters)
+        ActivationFunction = nn.softSignActivation
+        self.NN = nn(LayerDimensions, ActivationFunction, parameters)
         self.symmetryHandler = StateRotTaskSymmetry()
     
     def computeCommandFromState(self, state, desiredMotion):
