@@ -25,3 +25,4 @@ def getUnitVectorFromAngle(angle):
     s = np.sin(rad)
     vector = np.array([c, s])
     return vector
+
