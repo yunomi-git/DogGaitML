@@ -135,11 +135,6 @@ def main():
         runOptimizer()
 
 def runOptimizer():    
-    # costEvaluator = BatchSimulation(initialStatesList = initialStatesList, 
-    #                                 footModel = footModel, 
-    #                                 desiredMotionsList = desiredMotionsList, 
-    #                                 numSteps = numSteps, 
-    #                                 costWeights = costWeights)
     costEvaluator = StochasticBatchSimulationFromFile(filename = datasetFileName, 
                                                 numSteps = numSteps, 
                                                 costWeights = costWeights,
