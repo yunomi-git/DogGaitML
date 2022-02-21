@@ -26,3 +26,8 @@ def getUnitVectorFromAngle(angle):
     vector = np.array([c, s])
     return vector
 
+def getRandomOnRange(shape, aRange):
+    return np.random.rand(shape) * (aRange[1] - aRange[0]) + aRange[0]
+
+def getRandomValueOnRange(aRange):
+    return getRandomOnRange(1, aRange)[0]

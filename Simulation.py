@@ -7,84 +7,42 @@ Created on Sat Oct  9 19:22:23 2021
 
 import numpy as np
 from Dynamics import Dynamics
-from FootModel import SimpleFootModel
+from FootModel import FootModel
 from CostEvaluator import CostEvaluator
-from DogUtil import DogModel
+from DogUtil import DogModel, State, TaskMotion
 import MathUtil as mu
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from DebugMessage import DebugMessage
 
-
-
-
-class BatchSimulation(CostEvaluator):
-    def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights): 
-        super().__init__()
-        self.footModel = footModel
-        self.initialStatesList = initialStatesList
-        self.desiredMotionsList = desiredMotionsList
-        self.numSteps = numSteps
-        self.costWeights = costWeights
-                
-    def getCost(self, parameters):
-        totalCost = 0
-        self.debugMessage = DebugMessage()
-        i = 0
-
-        for initialState in self.initialStatesList:
-            for desiredMotion in self.desiredMotionsList:
-                i += 1
-                simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
-                simulation.setOptimizerIteration(self.optimizerIteration)
-                totalCost += simulation.getCost(parameters)
-                self.debugMessage.appendMessage("sim" + str(i), simulation.getDebugMessage())
-                
-        return totalCost
+@dataclass 
+class CostWeights():
+    failureStepsAfterTermination : float = 0.0
+    failureSwingFootOutOfBounds : float = 0.0
+    failureAnchoredFootOutOfBounds : float = 0.0
+    failureComUnsupportedAtStart : float = 0.0
+    failureComUnsupportedAtEnd : float = 0.0
+    failureFootOutOfBoundsErrorFromIdeal : float = 0.0
+    failureComEndErrorFromCentroid : float = 0.0
     
-class StochasticBatchSimulation(CostEvaluator):
-    def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights,
-                 batchStatesSize, batchTasksSize): 
-        super().__init__()
-        self.footModel = footModel
-        self.initialStatesList = initialStatesList
-        self.desiredMotionsList = desiredMotionsList
-        self.numSteps = numSteps
-        self.costWeights = costWeights
-        
-        self.batchStatesSize = batchStatesSize
-        self.batchTasksSize = batchTasksSize
-                
-    def getCost(self, parameters):
-        totalCost = 0
-        self.debugMessage = DebugMessage()  
-        statesBatch, tasksBatch = self.chooseRandomBatch()
-        i = 0
-
-
-        for initialState in statesBatch:
-            for desiredMotion in tasksBatch:
-                i += 1
-                simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
-                simulation.setOptimizerIteration(self.optimizerIteration)
-                totalCost += simulation.getCost(parameters)
-                self.debugMessage.appendMessage("sim" + str(i), simulation.getDebugMessage())
-                
-        return totalCost
+    comNormTranslationErrorInitial : float = 0.0
+    comNormRotationErrorInitial : float = 0.0
+    comTranslationSmoothnessInitial : float = 0.0
+    comRotationSmoothnessInitial : float = 0.0
+    footNormErrorFromIdealInitial : float = 0.0
     
-    def chooseRandomBatch(self):
-        statesBatch = np.random.choice(self.initialStatesList, 
-                                   size=self.batchStatesSize, 
-                                   replace=False)
-        tasksBatch = np.random.choice(self.desiredMotionsList, 
-                                   size=self.batchTasksSize, 
-                                   replace=False)
-        return statesBatch.tolist(), tasksBatch.tolist()
-        
+    # comNormTranslationErrorFinalStep : float = 0.0
+    # comNormRotationErrorFinalStep : float = 0.0
+    # footNormErrorFromIdealFinalStep : float = 0.0
+    
+    # comNormTranslationErrorMatureInNIterations : float = 0.0
+    # comNormRotationErrorMatureInNIterations : float = 0.0
+    # footNormErrorFromIdealMatureInNIterations : float = 0.0
+    
     
 class Simulation(CostEvaluator):
-    def __init__(self, initialState, footModel, desiredTaskMotion, 
-                 numSteps, costWeights):
+    def __init__(self, initialState: State, footModel: FootModel, desiredTaskMotion: TaskMotion, 
+                 numSteps, costWeights: CostWeights):
         super().__init__()
         self.simulationHistory = [];
 
@@ -271,30 +229,7 @@ class SimulationHistoryItem():
         self.command = command
         self.failureMessage = failureMessage
         
-@dataclass 
-class CostWeights():
-    failureStepsAfterTermination : float = 0.0
-    failureSwingFootOutOfBounds : float = 0.0
-    failureAnchoredFootOutOfBounds : float = 0.0
-    failureComUnsupportedAtStart : float = 0.0
-    failureComUnsupportedAtEnd : float = 0.0
-    failureFootOutOfBoundsErrorFromIdeal : float = 0.0
-    failureComEndErrorFromCentroid : float = 0.0
-    
-    comNormTranslationErrorInitial : float = 0.0
-    comNormRotationErrorInitial : float = 0.0
-    comTranslationSmoothnessInitial : float = 0.0
-    comRotationSmoothnessInitial : float = 0.0
-    footNormErrorFromIdealInitial : float = 0.0
-    
-    # comNormTranslationErrorFinalStep : float = 0.0
-    # comNormRotationErrorFinalStep : float = 0.0
-    # footNormErrorFromIdealFinalStep : float = 0.0
-    
-    # comNormTranslationErrorMatureInNIterations : float = 0.0
-    # comNormRotationErrorMatureInNIterations : float = 0.0
-    # footNormErrorFromIdealMatureInNIterations : float = 0.0
-    
+
     
     
     
