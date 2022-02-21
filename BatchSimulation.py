@@ -17,14 +17,15 @@ from dataclasses import dataclass
 from DebugMessage import DebugMessage
 from Simulation import Simulation
 from Dataset import Dataset
+from GaitPerformanceJudge import GaitPerformanceJudge
 
 class StochasticBatchSimulationFromFile(CostEvaluator):
-    def __init__(self, filename, footModel, numSteps, costWeights, batchStatesSize, batchTasksSize): 
+    def __init__(self, filename, footModel, numSteps, gaitPerformanceJudge: GaitPerformanceJudge, batchStatesSize, batchTasksSize): 
         super().__init__()
         self.footModel = footModel
         self.dataSet = Dataset(filename)
         self.numSteps = numSteps
-        self.costWeights = costWeights
+        self.gaitPerformanceJudge = gaitPerformanceJudge
         
         self.batchStatesSize = batchStatesSize
         self.batchTasksSize = batchTasksSize
@@ -39,7 +40,7 @@ class StochasticBatchSimulationFromFile(CostEvaluator):
         for initialState in statesBatch:
             for desiredMotion in tasksBatch:
                 i += 1
-                simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
+                simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.gaitPerformanceJudge)
                 simulation.setOptimizerIteration(self.optimizerIteration)
                 totalCost += simulation.getCost(parameters)
                 self.debugMessage.appendMessage("sim" + str(i), simulation.getDebugMessage())
@@ -47,13 +48,13 @@ class StochasticBatchSimulationFromFile(CostEvaluator):
         return totalCost
 
 class BatchSimulation(CostEvaluator):
-    def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights): 
+    def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, gaitPerformanceJudge: GaitPerformanceJudge): 
         super().__init__()
         self.footModel = footModel
         self.initialStatesList = initialStatesList
         self.desiredMotionsList = desiredMotionsList
         self.numSteps = numSteps
-        self.costWeights = costWeights
+        self.gaitPerformanceJudge = gaitPerformanceJudge
                 
     def getCost(self, parameters):
         totalCost = 0
@@ -63,7 +64,7 @@ class BatchSimulation(CostEvaluator):
         for initialState in self.initialStatesList:
             for desiredMotion in self.desiredMotionsList:
                 i += 1
-                simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
+                simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.gaitPerformanceJudge)
                 simulation.setOptimizerIteration(self.optimizerIteration)
                 totalCost += simulation.getCost(parameters)
                 self.debugMessage.appendMessage("sim" + str(i), simulation.getDebugMessage())
@@ -71,14 +72,14 @@ class BatchSimulation(CostEvaluator):
         return totalCost
     
 class StochasticBatchSimulation(CostEvaluator):
-    def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, costWeights,
+    def __init__(self, initialStatesList, footModel, desiredMotionsList, numSteps, gaitPerformanceJudge: GaitPerformanceJudge,
                  batchStatesSize, batchTasksSize): 
         super().__init__()
         self.footModel = footModel
         self.initialStatesList = initialStatesList
         self.desiredMotionsList = desiredMotionsList
         self.numSteps = numSteps
-        self.costWeights = costWeights
+        self.gaitPerformanceJudge = gaitPerformanceJudge
         
         self.batchStatesSize = batchStatesSize
         self.batchTasksSize = batchTasksSize
@@ -93,7 +94,7 @@ class StochasticBatchSimulation(CostEvaluator):
         for initialState in statesBatch:
             for desiredMotion in tasksBatch:
                 i += 1
-                simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.costWeights)
+                simulation = Simulation(initialState, self.footModel, desiredMotion, self.numSteps, self.gaitPerformanceJudge)
                 simulation.setOptimizerIteration(self.optimizerIteration)
                 totalCost += simulation.getCost(parameters)
                 self.debugMessage.appendMessage("sim" + str(i), simulation.getDebugMessage())
