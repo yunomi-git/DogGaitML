@@ -78,13 +78,15 @@ class Optimizer(ABC):
         self.setOptimizationEndConditions(optimizationEndConditions)
         self.stepCount = 0;
         while (not self.hasReachedEndCondition()):
-
             self.step();
-            if (self.stepCount % self.printEveryNSteps == 0):
-                self.printDebug()
+            self.printDebugOnInterval()
 
     def printDebug(self):
         print(self.debugMessage)
+        
+    def printDebugOnInterval(self):
+        if (self.stepCount % self.printEveryNSteps == 0):
+                self.printDebug()
                 
     # def stoppingConditionsHaveBeenMet(self):
     #     return self.hasReachedMinimum(convergenceThreshold) or self.stepCount >= maxCount

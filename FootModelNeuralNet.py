@@ -60,11 +60,12 @@ class NNFootModelDrStange(FootModel):
         self.NN = nn(LayerDimensions, ActivationFunction, parameters)
         self.symmetryHandler = StateRotTaskSymmetry()
     
-    def computeCommandFromState(self, state, desiredMotion):
-        inputVect = self.generateStateVector(state, desiredMotion)
+    def computeCommandFromState(self, state, task):
+        simplifiedState, simplifiedTask = self.symmetryHandler.simplifyInputFrameAndSave(state, task)
+        inputVect = self.generateStateVector(simplifiedState, simplifiedTask)
         output = self.NN.inference(inputVect)
         footChoiceOutput = output[0:4]
-        bestFoot = np.argmin(footChoiceOutput)
+        bestFoot = np.argmax(footChoiceOutput)
         desiredCommand = Command(bestFoot, 
                          np.array([output[4], output[5]]),
                          np.array([output[6], output[7]]),
@@ -73,9 +74,8 @@ class NNFootModelDrStange(FootModel):
         desiredCommand = self.symmetryHandler.returnOutputToOriginalFrame(desiredCommand)
         return desiredCommand;
     
-    def generateStateVector(self, state, desiredMotion):
-        simplifiedState, simplifiedTask = self.symmetryHandler.simplifyInputFrameAndSave(state, desiredMotion)
-        footState = simplifiedState.footState
+    def generateStateVector(self, state, task):
+        footState = state.footState
         vector = np.array([footState[0,0],
                            footState[0,1],
                            footState[1,0],
@@ -84,9 +84,9 @@ class NNFootModelDrStange(FootModel):
                            footState[2,1],
                            footState[3,0],
                            footState[3,1],
-                           simplifiedTask.translationX, 
-                           simplifiedTask.translationY,
-                           simplifiedTask.relativeRotation
+                           task.translationX, 
+                           task.translationY,
+                           task.relativeRotation
                            ])
         return vector
     
