@@ -43,6 +43,7 @@ class Simulation(CostEvaluator):
                                               None))
         self.numSuccessfulStepsTaken = 0
         self.gaitPerformanceJudge = gaitPerformanceJudge
+        self.gaitPerformanceJudge.setDebugMessage(self.debugMessage)
             
     def takeSimulationStep(self):
         desiredCommand = self.lastCommand
@@ -63,12 +64,6 @@ class Simulation(CostEvaluator):
             else:
                 self.terminate()
 
-            # cost = self.gaitPerformanceJudge.computeCostBeforeTermination(desiredTaskMotion=self.desiredTaskMotion, 
-            #                     command=desiredCommand, 
-            #                     originalState=originalState, 
-            #                     currentState=currentState, 
-            #                     failureMessage=dynamics.getFailureMessage()); 
-            
             self.lastCommand = desiredCommand
             failureMessage = dynamics.getFailureMessage()
         else:

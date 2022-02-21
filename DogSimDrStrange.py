@@ -11,6 +11,7 @@ from Optimizer import OptimizationEndConditions
 from FootModelNeuralNet import NNFootModelSimplest
 from Simulation import Simulation, CostWeights
 from BatchSimulation import StochasticBatchSimulationFromFile
+from GaitPerformanceJudge import GaitJudgeJarvis
 from DogUtil import DogModel, State, TaskMotion
 import pickle
 import os
@@ -96,6 +97,8 @@ costWeights = CostWeights(failureStepsAfterTermination=10000.,
                             comTranslationSmoothnessInitial= 0.1,
                             comRotationSmoothnessInitial = 0.1,
                             footNormErrorFromIdealInitial = 1.)
+
+gaitPerformanceJudge = GaitJudgeJarvis(costWeights)
 
 numSteps = 4
 
