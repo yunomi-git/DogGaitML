@@ -22,7 +22,23 @@ def createPopulationHistory(costEvaluator):
     xMax, yMax = costEvaluator.getDefaultRange()
     
     dataHistory = []
-        
+
+    ## Full 
+    # Ackley
+    # optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
+    #                                             mutationMagnitude=3.0,
+    #                                             decreaseMutationMagnitudeEveryNSteps=10,
+    #                                             mutationMagnitudeLearningRate=0.9,
+    #                                             mutationChance=0.9,
+    #                                             decreaseMutationChanceEveryNSteps=10,
+    #                                             mutationChanceLearningRate=0.9,
+    #                                             mutateWithNormalDistribution=False,
+
+    #                                             mutationLargeCostScalingFactor=3.0,
+    #                                             diversityChoiceRatio = 0.7,
+    #                                             varianceMutationMaxMagnitude = 3.0)
+
+    # Eggholder
     optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
                                                 mutationMagnitude=3.0,
                                                 decreaseMutationMagnitudeEveryNSteps=10,
@@ -31,22 +47,78 @@ def createPopulationHistory(costEvaluator):
                                                 decreaseMutationChanceEveryNSteps=10,
                                                 mutationChanceLearningRate=0.9,
                                                 mutateWithNormalDistribution=False,
-                                                mutationLargeCostScalingFactor=10.0,
+                                                mutationLargeCostScalingFactor=40.0,
                                                 diversityChoiceRatio = 0.7,
-                                                varianceMutationMaxMagnitude = 1.);
-    initialValue = (np.random.rand(numData, 2)-0.5) * (xMax + yMax);
-    optimizer = SimpleGAOptimizer(initialValue, costEvaluator, optimizationParameters);
+                                                varianceMutationMaxMagnitude = 50.)
+
+    ## Nothing
+    # optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
+    #                                             mutationMagnitude=3.0,
+    #                                             decreaseMutationMagnitudeEveryNSteps=10,
+    #                                             mutationMagnitudeLearningRate=0.9,
+    #                                             mutationChance=0.9,
+    #                                             decreaseMutationChanceEveryNSteps=10,
+    #                                             mutationChanceLearningRate=0.9,
+    #                                             mutateWithNormalDistribution=False,
+
+    #                                             mutationLargeCostScalingFactor=0.0,
+    #                                             diversityChoiceRatio = 0.0,
+    #                                             varianceMutationMaxMagnitude = 0.0)
+
+    # ## Diversity Only
+    # optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
+    #                                             mutationMagnitude=3.0,
+    #                                             decreaseMutationMagnitudeEveryNSteps=10,
+    #                                             mutationMagnitudeLearningRate=0.9,
+    #                                             mutationChance=0.9,
+    #                                             decreaseMutationChanceEveryNSteps=10,
+    #                                             mutationChanceLearningRate=0.9,
+    #                                             mutateWithNormalDistribution=False,
+    #                                             mutationLargeCostScalingFactor=0.0,
+    #                                             diversityChoiceRatio = 0.7,
+    #                                             varianceMutationMaxMagnitude = 0.)
+
+    # ## Large mutation scale Only
+    # optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
+    #                                             mutationMagnitude=3.0,
+    #                                             decreaseMutationMagnitudeEveryNSteps=10,
+    #                                             mutationMagnitudeLearningRate=0.9,
+    #                                             mutationChance=0.9,
+    #                                             decreaseMutationChanceEveryNSteps=10,
+    #                                             mutationChanceLearningRate=0.9,
+    #                                             mutateWithNormalDistribution=False,
+    #                                             mutationLargeCostScalingFactor=3.0,
+    #                                             diversityChoiceRatio = 0.0,
+    #                                             varianceMutationMaxMagnitude = 0.)
+
+    # ## Population Variance Only
+    # optimizationParameters = SimpleGAParameters(crossoverRatio=0.5, 
+    #                                             mutationMagnitude=3.0,
+    #                                             decreaseMutationMagnitudeEveryNSteps=10,
+    #                                             mutationMagnitudeLearningRate=0.9,
+    #                                             mutationChance=0.9,
+    #                                             decreaseMutationChanceEveryNSteps=10,
+    #                                             mutationChanceLearningRate=0.9,
+    #                                             mutateWithNormalDistribution=False,
+    #                                             mutationLargeCostScalingFactor=0.0,
+    #                                             diversityChoiceRatio = 0.0,
+    #                                             varianceMutationMaxMagnitude = 3.)
+
+    initialValue = (np.random.rand(numData, 2)-0.5) * (xMax + yMax)
+    optimizer = SimpleGAOptimizer(initialValue, costEvaluator, optimizationParameters,
+                               minBounds = [-xMax, -yMax],
+                               maxBounds = [xMax, yMax])
     endConditions = OptimizationEndConditions(maxSteps=numHistory, 
                                               convergenceThreshold=0.00)
     optimizer.setOptimizationEndConditions(endConditions)
-    optimizer.stepCount = 0;
+    optimizer.stepCount = 0
     appendOptimizationDataToHistory(optimizer, dataHistory)
     while (not optimizer.hasReachedEndCondition()):
-        optimizer.step();
+        optimizer.step()
         appendOptimizationDataToHistory(optimizer, dataHistory)
     # optimizer.optimizeUntilEndCondition(endConditions);
     temp, convergenceHistory = optimizer.getFullHistory()
-    return dataHistory, convergenceHistory;
+    return dataHistory, convergenceHistory
 
 def appendOptimizationDataToHistory(optimizer, dataHistory):
     population = np.array(optimizer.population)

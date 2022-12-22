@@ -65,11 +65,14 @@ class SimpleGAParameters:
     
     
 class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
-    def __init__(self, initialPopulation, costEvaluator, GAParameters):
+    def __init__(self, initialPopulation, costEvaluator, GAParameters, minBounds=None, maxBounds=None):
         super().__init__(initialPopulation, costEvaluator);
         self.GAParameters = GAParameters
         if self.GAParameters.varianceMutationMaxMagnitude <= 0.:
             self.GAParameters.varianceMutationMaxMagnitude = 0.000001
+
+        self.minBounds = minBounds
+        self.maxBounds = maxBounds
         
     def getNextPopulation(self, population, costsList):   
         minCost = min(costsList)
@@ -94,14 +97,19 @@ class SimpleGAOptimizer(GeneticAlgorithmOptimizer):
             
             children = np.append(children, np.array([child]), axis=0)
         
+        children = np.maximum(children, self.minBounds)
+        children = np.minimum(children, self.maxBounds)
         return children
     
     def getMutationScaling(self, population, costsList, avgParentCost):
         minCost = min(costsList)
         
+        # High cost = greater exploration
         minMag = self.GAParameters.mutationMagnitude
         largeCostMag = (self.GAParameters.mutationLargeCostScalingFactor
                           * np.log((avgParentCost - minCost) + 1))
+
+        # Low variance in whole population = higher mutation
         variance = SimpleGAOptimizer.getVarianceOfPopulation(population)
         lowVarianceMag = 1./(variance + 1./self.GAParameters.varianceMutationMaxMagnitude)
         

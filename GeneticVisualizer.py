@@ -4,7 +4,11 @@ Created on Fri Nov 19 20:51:38 2021
 
 @author: Evan Yu
 """
+import time
+
 from abc import ABC, abstractmethod
+from cmath import sin
+import math
 from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
@@ -29,7 +33,7 @@ class Slider(QWidget):
         
         self.slider = QSlider(self)
         self.slider.setOrientation(Qt.Horizontal)
-        self.slider.setTickInterval(1.0)
+        self.slider.setTickInterval(1)
         self.horizontalLayout.addWidget(self.slider)
         spacerItem1 = QSpacerItem(0, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem1)
@@ -57,6 +61,7 @@ class GeneticVisualizer():
        self.setDataHistory(dataHistory)
        
        self.convergenceHistory = self.fixConvergenceHistory(convergenceHistory)
+       self.autoHistoryBool = False
        
        # self.createEverything()
        
@@ -114,6 +119,8 @@ class GeneticVisualizer():
         self.wMain.addWidget(self.slider, row = 1, col = 0, colspan = 2)
         self.wMain.addWidget(self.cost, row = 4, col = 0)
         self.wMain.addWidget(self.ideal, row = 4, col = 1)
+        self.wMain.addWidget(self.autoBtn, row=1, col=1)
+
         
         self.wMain.show()
         self.wMain.resize(800,800)
@@ -131,14 +138,19 @@ class GeneticVisualizer():
         dataMax = z.max()
         dataMin = z.min()
         dataScale = np.abs(dataMax - dataMin)
-        heightLayer = (z - dataMin) / dataScale
+        heightLayer = (z - dataMin) / dataScale # on 0 to 1
         uniformLayer = np.ones([self.resolution, self.resolution])
         alpha = np.ones([self.resolution, self.resolution]) * 0.5
     
-        colors[:,:, 0] = heightLayer
-        colors[:,:, 1] = uniformLayer * 0.4
-        colors[:,:, 2] = uniformLayer * 0.4
-        colors[:,:, 3] = alpha
+        colors[:,:, 0] = np.maximum(0, 1.0-2*heightLayer)
+        colors[:,:, 2] = np.maximum(0, 2*heightLayer - 1.0) 
+        colors[:,:, 1] = (1.0 - colors[:,:, 0]  - colors[:,:, 2] ) * 0.5
+        colors[:,:, 3] = uniformLayer * ( 0.5)
+
+        # colors[:,:, 0] = np.maximum(0, 1.0-2*heightLayer)
+        # colors[:,:, 2] = np.maximum(0, 2*heightLayer - 1.0) 
+        # colors[:,:, 1] = uniformLayer
+        # colors[:,:, 3] = alpha
         
         p = gl.GLSurfacePlotItem(x=x, y=y, z=z, colors=colors, shader = 'shaded')
         self.w3d.addItem(p)
@@ -155,9 +167,20 @@ class GeneticVisualizer():
         
         self.nextBtn.clicked.connect(self.nextButton)
         self.prevBtn.clicked.connect(self.prevButton)
-        
 
-    
+        self.autoBtn = QtGui.QPushButton('Start')
+        self.autoBtn.clicked.connect(self.autoButton)
+        self.timer = pg.QtCore.QTimer()
+        self.timer.timeout.connect(self.autoHistory)
+        self.timer.start(50)
+        
+    def autoButton(self):
+        self.autoHistoryBool = not self.autoHistoryBool
+
+    def autoHistory(self):
+        if self.autoHistoryBool:
+            self.incrementHistory(1)
+
     def nextButton(self):
         self.incrementHistory(1)
     def prevButton(self):
@@ -182,12 +205,12 @@ class GeneticVisualizer():
         
     def setHistoryIndex(self, idx):
         self.historyDisplayIndex = idx
-        prevhistoryDisplayIndex = self.historyDisplayIndex - 1
-        if prevhistoryDisplayIndex < 0:
-            prevhistoryDisplayIndex = 0
-        prevData = self.dataHistory[prevhistoryDisplayIndex]
-        self.prevDataPlot.setData(pos=prevData, color=(0,1,0,0.5), 
-                                  size=self.avgGridSize/30.0, pxMode=False)
+        # prevhistoryDisplayIndex = self.historyDisplayIndex - 1
+        # if prevhistoryDisplayIndex < 0:
+        #     prevhistoryDisplayIndex = 0
+        # prevData = self.dataHistory[prevhistoryDisplayIndex]
+        # self.prevDataPlot.setData(pos=prevData, color=(0,1,0,0.5), 
+        #                           size=self.avgGridSize/30.0, pxMode=False)
         data = self.dataHistory[self.historyDisplayIndex]
         self.dataPlot.setData(pos=data, color=(0,1,1,1), 
                               size=self.avgGridSize/30.0, pxMode=False)
@@ -200,16 +223,16 @@ class GeneticVisualizer():
         initialData = self.dataHistory[0]
         self.dataPlot = gl.GLScatterPlotItem(pos=initialData, color=(0,1,1,1), 
                                              size=self.avgGridSize/30.0, pxMode=False)
-        self.prevDataPlot = gl.GLScatterPlotItem(pos=initialData, color=(0,1,1,1), 
-                                                 size=self.avgGridSize/30.0, pxMode=False)
+        # self.prevDataPlot = gl.GLScatterPlotItem(pos=initialData, color=(0,1,1,1), 
+        #                                          size=self.avgGridSize/30.0, pxMode=False)
         self.w3d.addItem(self.dataPlot)
-        self.w3d.addItem(self.prevDataPlot)
+        # self.w3d.addItem(self.prevDataPlot)
         
     def createOptimaPlot(self):
         data = self.costEvaluator.getKnownGlobalMinima()
         if data is not None:
             data = np.array(data)
-            minima = gl.GLScatterPlotItem(pos=data, color=(1,0,0,1), 
+            minima = gl.GLScatterPlotItem(pos=data, color=(1,0,1,1), 
                                           size=self.avgGridSize/30.0, pxMode=False)
             self.w3d.addItem(minima)
         
