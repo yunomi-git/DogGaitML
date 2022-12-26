@@ -6,11 +6,11 @@ Created on Thu Dec  2 17:43:38 2021
 """
 
 import numpy as np;
-from GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
-from Optimizer import OptimizationEndConditions
-from FootModelNeuralNet import NNFootModelSimplest
-from Simulation import BatchSimulation, Simulation, Curriculum
-from DogUtil import DogModel, State, TaskMotion
+from optimizer.GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
+from optimizer.Optimizer import OptimizationEndConditions
+from model.FootModelNeuralNet import NNFootModelSimplest
+from simulation.Simulation import BatchSimulation, Simulation, Curriculum
+from model.DogUtil import DogModel, State, TaskMotion
 # import matplotlib.pyplot as plt;
 # import pyglet
 # from pyglet.window import mouse

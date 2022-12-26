@@ -5,7 +5,7 @@ Created on Wed Dec  1 14:04:09 2021
 @author: Evan Yu
 """
 
-from GeneticOptimizer import GeneticAlgorithmOptimizer, SimpleGAOptimizer
+from optimizer.GeneticOptimizer import GeneticAlgorithmOptimizer, SimpleGAOptimizer
 import numpy as np
 from scipy.special import softmax
 

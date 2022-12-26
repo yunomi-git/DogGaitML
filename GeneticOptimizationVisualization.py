@@ -8,11 +8,11 @@ Created on Fri Nov 26 19:31:07 2021
 from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
-from GeneticVisualizer import GeneticVisualizer
-from GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
-from Optimizer import OptimizationEndConditions
+from visualizer.GeneticVisualizer import GeneticVisualizer
+from optimizer.GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
+from optimizer.Optimizer import OptimizationEndConditions
 import numpy as np
-from CostFunction2D import *
+from optimizer.CostFunction2D import *
 
 
 # dataHistory is a list of np arrays with shape (numElements, 3)

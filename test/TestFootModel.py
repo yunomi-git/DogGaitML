@@ -6,8 +6,8 @@ Created on Mon Oct 11 11:15:02 2021
 """
 
 import numpy as np
-from DogUtil import Command, State, TaskMotion
-import FootModel as fmodel
+from model.DogUtil import Command, State, TaskMotion
+import model.FootModel as fmodel
 import time
 
 def testGetExpandedStates():

@@ -6,11 +6,11 @@ Created on Sat Oct  9 19:22:23 2021
 """
 
 import numpy as np
-from Dynamics import Dynamics
-from FootModel import SimpleFootModel
-from CostEvaluator import CostEvaluator
-from DogUtil import DogModel
-import MathUtil as mu
+from simulation.Dynamics import Dynamics
+from model.FootModel import SimpleFootModel
+from optimizer.CostEvaluator import CostEvaluator
+from model.DogUtil import DogModel
+import util.MathUtil as mu
 from abc import ABC, abstractmethod
 
 

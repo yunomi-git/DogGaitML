@@ -7,7 +7,7 @@ Created on Mon Nov 29 14:58:24 2021
 
 from abc import ABC, abstractmethod
 import numpy as np
-from CostEvaluator import CostEvaluator
+from optimizer.CostEvaluator import CostEvaluator
 
 class CostEvaluator2D(CostEvaluator):
     def __init__(self):

@@ -7,9 +7,9 @@ Created on Fri Oct  8 21:12:00 2021
 
 from abc import ABC, abstractmethod
 import numpy as np
-from Polygon import Triangle2D
-from DogUtil import Command, State, TaskMotion, DogModel
-import MathUtil as mu
+from util.Polygon import Triangle2D
+from model.DogUtil import Command, State, TaskMotion, DogModel
+import util.MathUtil as mu
 
 
 class FootModel(ABC):

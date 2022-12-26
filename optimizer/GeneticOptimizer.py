@@ -6,7 +6,7 @@ Created on Sun Nov 14 16:10:47 2021
 """
 
 import numpy as np;
-from Optimizer import Optimizer
+from optimizer.Optimizer import Optimizer
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from scipy.special import softmax

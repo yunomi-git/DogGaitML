@@ -7,8 +7,8 @@ Created on Fri Dec  3 13:41:54 2021
 
 import pickle
 
-from FootModelNeuralNet import NNFootModelSimplest
-from FootModel import SimpleFootModel
+from model.FootModelNeuralNet import NNFootModelSimplest
+from model.FootModel import SimpleFootModel
 
 
 subFolderName = "GA_NNSimpleModel"

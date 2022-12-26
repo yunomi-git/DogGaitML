@@ -5,10 +5,10 @@ Created on Sun Nov 14 18:17:59 2021
 @author: Evan Yu
 """
 import matplotlib.pyplot as mpl;
-from CostEvaluator import CostEvaluator
+from optimizer.CostEvaluator import CostEvaluator
 from mpl_toolkits.mplot3d import Axes3D
-from GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
-from Optimizer import OptimizationEndConditions
+from optimizer.GeneticOptimizer import SimpleGAOptimizer, SimpleGAParameters
+from optimizer.Optimizer import OptimizationEndConditions
 import numpy as np
 import matplotlib.pyplot as plt;
 

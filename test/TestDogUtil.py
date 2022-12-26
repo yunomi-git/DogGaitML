@@ -6,7 +6,7 @@ Created on Mon Oct 11 12:56:06 2021
 """
 
 import numpy as np
-from DogUtil import Command, State, TaskMotion, DogModel
+from model.DogUtil import Command, State, TaskMotion, DogModel
 
 def testFeetThatCanMove():
     footState = np.array([[1.0,1.0],[1.0,-1.0],[-1.0,-1.0],[-1.0,1.0]])

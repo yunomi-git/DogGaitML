@@ -8,9 +8,9 @@ import numpy as np;
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import matplotlib.pyplot as mpl;
-from CostEvaluator import CostEvaluator
+from optimizer.CostEvaluator import CostEvaluator
 from mpl_toolkits.mplot3d import Axes3D
-from Optimizer import GradientDescentOptimizer, OptimizationParameters, OptimizationEndConditions
+from optimizer.Optimizer import GradientDescentOptimizer, OptimizationParameters, OptimizationEndConditions
 
 class ParabolicCostEvaluator(CostEvaluator):
     def __init__(self, a, b):

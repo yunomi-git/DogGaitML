@@ -7,7 +7,7 @@ Created on Wed Oct  6 22:11:22 2021
 import numpy as np;
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import CostEvaluator
+import optimizer.CostEvaluator as CostEvaluator
 
 
 class Optimizer(ABC):

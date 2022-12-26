@@ -5,14 +5,14 @@ Created on Wed Oct  6 21:12:37 2021
 @author: Evan Yu
 """
 import numpy as np;
-from Optimizer import Optimizer, OptimizationParameters, GradientDescentOptimizer
-from FootModel import SimpleFootModel
-from Simulation import BatchSimulation, Simulation
-from DogUtil import DogModel, State, TaskMotion
+from optimizer.Optimizer import Optimizer, OptimizationParameters, GradientDescentOptimizer
+from model.FootModel import SimpleFootModel
+from simulation.Simulation import BatchSimulation, Simulation
+from model.DogUtil import DogModel, State, TaskMotion
 import matplotlib.pyplot as plt;
 import pyglet
 from pyglet.window import mouse
-from VisualizerSimulation import VisualizerSimulation
+from visualizer.VisualizerSimulation import VisualizerSimulation
 import pickle
 
 def generateInitialStatesList():

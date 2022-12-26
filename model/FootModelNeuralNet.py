@@ -5,10 +5,10 @@ Created on Sun Nov 28 20:32:25 2021
 @author: Evan Yu
 """
 
-from FootModel import FootModel
-from NeuralNetwork import NeuralNetworkSingleLayer as nnsl
+from model.FootModel import FootModel
+from model.NeuralNetwork import NeuralNetworkSingleLayer as nnsl
 import numpy as np
-from DogUtil import TaskMotion, State, Command, DogModel
+from model.DogUtil import TaskMotion, State, Command, DogModel
 
 class NNFootModelDualStage(FootModel):
     def __init__(self, parameters=None):

@@ -5,8 +5,8 @@ Created on Sat Oct  9 18:51:00 2021
 @author: Evan Yu
 """
 import numpy as np
-from DogUtil import Command, State, TaskMotion, DogModel
-from Polygon import Triangle2D
+from model.DogUtil import Command, State, TaskMotion, DogModel
+from util.Polygon import Triangle2D
 
 class Dynamics():
     def __init__(self, initialState):

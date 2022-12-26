@@ -5,8 +5,8 @@ Created on Sat Oct 16 19:34:21 2021
 @author: Evan Yu
 """
 
-from VisualizerState import VisualizerState
-from Simulation import SimulationHistoryItem
+from visualizer.VisualizerState import VisualizerState
+from simulation.Simulation import SimulationHistoryItem
 import pyglet
 
 class VisualizerSimulation:

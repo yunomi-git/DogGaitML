@@ -5,13 +5,13 @@ Created on Sat Oct 16 01:17:36 2021
 @author: Evan Yu
 """
 
-from Simulation import Simulation
-from FootModel import FootModel
-from DogUtil import DogModel, Command, TaskMotion, State
+from simulation.Simulation import Simulation
+from model.FootModel import FootModel
+from model.DogUtil import DogModel, Command, TaskMotion, State
 import numpy as np
 import time
-from VisualizerSimulation import VisualizerSimulation
-from VisualizerState import VisualizerState
+from visualizer.VisualizerSimulation import VisualizerSimulation
+from visualizer.VisualizerState import VisualizerState
 import pyglet
 from pyglet import shapes
 from pyglet.window import mouse

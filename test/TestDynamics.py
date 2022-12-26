@@ -4,11 +4,11 @@ Created on Mon Oct 11 17:31:49 2021
 
 @author: Evan Yu
 """
-from Dynamics import Dynamics, DynamicsFailureMessage
+from simulation.Dynamics import Dynamics, DynamicsFailureMessage
 import numpy as np
-from DogUtil import Command, State, TaskMotion, DogModel
-from Polygon import Triangle2D
-from VisualizerState import VisualizerState
+from model.DogUtil import Command, State, TaskMotion, DogModel
+from util.Polygon import Triangle2D
+from visualizer.VisualizerState import VisualizerState
 import pyglet
 from pyglet import shapes
 

@@ -7,11 +7,11 @@ Created on Mon Oct 11 18:19:09 2021
 
 import pyglet
 from pyglet import shapes
-from DogUtil import DogModel, TaskMotion
+from model.DogUtil import DogModel, TaskMotion
 import numpy as np
 
-from Dynamics import Dynamics, DynamicsFailureMessage
-import MathUtil as mu
+from simulation.Dynamics import Dynamics, DynamicsFailureMessage
+import util.MathUtil as mu
 
 class VisualizerState():
     def __init__(self):
